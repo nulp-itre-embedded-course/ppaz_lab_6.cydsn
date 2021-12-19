@@ -1,0 +1,2897 @@
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 1
+
+
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.syntax unified
+  15              		.file	"main.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.section	.text.Write_SPI,"ax",%progbits
+  20              		.align	2
+  21              		.global	Write_SPI
+  22              		.thumb
+  23              		.thumb_func
+  24              		.type	Write_SPI, %function
+  25              	Write_SPI:
+  26              	.LFB64:
+  27              		.file 1 "main.c"
+   1:main.c        **** /* ========================================
+   2:main.c        ****  *
+   3:main.c        ****  * Copyright YOUR COMPANY, THE YEAR
+   4:main.c        ****  * All Rights Reserved
+   5:main.c        ****  * UNPUBLISHED, LICENSED SOFTWARE.
+   6:main.c        ****  *
+   7:main.c        ****  * CONFIDENTIAL AND PROPRIETARY INFORMATION
+   8:main.c        ****  * WHICH IS THE PROPERTY OF your company.
+   9:main.c        ****  *
+  10:main.c        ****  * ========================================
+  11:main.c        **** */
+  12:main.c        **** #include "project.h"
+  13:main.c        **** #include <stdio.h>
+  14:main.c        **** 
+  15:main.c        **** // ADXL345 Register Definition
+  16:main.c        **** #define     RA_BW_RATE          0x2C    // R/W   0x0A   Data rate and power mode control
+  17:main.c        **** #define 	RA_DATA_FORMAT 	    0x31 	// R/W 	 0   	Data format control
+  18:main.c        **** #define 	RA_POWER_CTL 	    0x2D 	// R/W 	 0   	Power-saving features control
+  19:main.c        **** #define 	RA_DATAX0 	        0x32 	// R 	 0 	    X-Axis Data 0
+  20:main.c        **** #define 	RA_DATAX1 	        0x33 	// R 	 0 	    X-Axis Data 1
+  21:main.c        **** #define 	RA_DATAY0 	        0x34 	// R 	 0 	    Y-Axis Data 0
+  22:main.c        **** #define 	RA_DATAY1 	        0x35 	// R 	 0 	    Y-Axis Data 1
+  23:main.c        **** #define 	RA_DATAZ0 	        0x36 	// R 	 0 	    Z-Axis Data 0
+  24:main.c        **** #define 	RA_DATAZ1 	        0x37 	// R 	 0 	    Z-Axis Data 1
+  25:main.c        **** #define     RA_OFSX             0x1E    // R/W   0      X-axis offset
+  26:main.c        **** #define     RA_OFSY             0x1F    // R/W   0      Y-axis offset
+  27:main.c        **** #define     RA_OFSZ             0x20    // R/W   0      Z-axis offset
+  28:main.c        **** 
+  29:main.c        **** #define     SPI_READ            0x80
+  30:main.c        **** #define     SPI_WRITE           0x00
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 2
+
+
+  31:main.c        **** #define     SPI_MULTIPLE_BIT    0x40
+  32:main.c        **** #define     SPI_SINGLE_BIT      0x00
+  33:main.c        **** 
+  34:main.c        **** #define SCALE_FACTOR    3.9f 
+  35:main.c        **** 
+  36:main.c        **** float cal_X = 0, cal_Y = 0, cal_Z = 0; 
+  37:main.c        **** int16 x, y, z;
+  38:main.c        **** float xg, yg, zg;
+  39:main.c        **** char buffer[50]; 
+  40:main.c        **** char raw[6];    // raw data from regs: DATAX0, DATAX1, DATAY0, DATAY1, DATAZ0, DATAZ1
+  41:main.c        **** 
+  42:main.c        **** void Write_SPI(unsigned char reg, unsigned char data)       // write single byte via SPI
+  43:main.c        **** {
+  28              		.loc 1 43 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              	.LVL0:
+  33 0000 10B5     		push	{r4, lr}
+  34              		.cfi_def_cfa_offset 8
+  35              		.cfi_offset 4, -8
+  36              		.cfi_offset 14, -4
+  37 0002 0C46     		mov	r4, r1
+  38              	.LVL1:
+  44:main.c        ****     unsigned char addr = reg | SPI_WRITE;
+  45:main.c        **** 
+  46:main.c        ****     SPIM_WriteTxData(addr);
+  39              		.loc 1 46 0
+  40 0004 FFF7FEFF 		bl	SPIM_WriteTxData
+  41              	.LVL2:
+  47:main.c        ****     SPIM_WriteTxData(data);
+  42              		.loc 1 47 0
+  43 0008 2046     		mov	r0, r4
+  44 000a FFF7FEFF 		bl	SPIM_WriteTxData
+  45              	.LVL3:
+  46              	.L2:
+  48:main.c        ****     while((SPIM_ReadTxStatus() & SPIM_STS_SPI_DONE) != SPIM_STS_SPI_DONE);
+  47              		.loc 1 48 0 discriminator 1
+  48 000e FFF7FEFF 		bl	SPIM_ReadTxStatus
+  49              	.LVL4:
+  50 0012 10F0010F 		tst	r0, #1
+  51 0016 FAD0     		beq	.L2
+  49:main.c        **** }
+  52              		.loc 1 49 0
+  53 0018 10BD     		pop	{r4, pc}
+  54              		.cfi_endproc
+  55              	.LFE64:
+  56              		.size	Write_SPI, .-Write_SPI
+  57 001a 00BF     		.section	.text.Read_SPI,"ax",%progbits
+  58              		.align	2
+  59              		.global	Read_SPI
+  60              		.thumb
+  61              		.thumb_func
+  62              		.type	Read_SPI, %function
+  63              	Read_SPI:
+  64              	.LFB65:
+  50:main.c        **** 
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 3
+
+
+  51:main.c        **** unsigned char Read_SPI(unsigned char reg)                   // read single byte from SPI
+  52:main.c        **** {
+  65              		.loc 1 52 0
+  66              		.cfi_startproc
+  67              		@ args = 0, pretend = 0, frame = 0
+  68              		@ frame_needed = 0, uses_anonymous_args = 0
+  69              	.LVL5:
+  70 0000 10B5     		push	{r4, lr}
+  71              		.cfi_def_cfa_offset 8
+  72              		.cfi_offset 4, -8
+  73              		.cfi_offset 14, -4
+  53:main.c        ****     unsigned char data;
+  54:main.c        ****     unsigned char addr = reg | SPI_READ;
+  74              		.loc 1 54 0
+  75 0002 40F08004 		orr	r4, r0, #128
+  76              	.LVL6:
+  55:main.c        **** 
+  56:main.c        ****     SPIM_ClearRxBuffer();
+  77              		.loc 1 56 0
+  78 0006 FFF7FEFF 		bl	SPIM_ClearRxBuffer
+  79              	.LVL7:
+  57:main.c        ****     SPIM_WriteTxData(addr);
+  80              		.loc 1 57 0
+  81 000a 2046     		mov	r0, r4
+  82 000c FFF7FEFF 		bl	SPIM_WriteTxData
+  83              	.LVL8:
+  58:main.c        ****     SPIM_WriteTxData(0xFF);
+  84              		.loc 1 58 0
+  85 0010 FF20     		movs	r0, #255
+  86 0012 FFF7FEFF 		bl	SPIM_WriteTxData
+  87              	.LVL9:
+  88              	.L5:
+  59:main.c        ****     while((SPIM_ReadTxStatus() & SPIM_STS_SPI_DONE) != SPIM_STS_SPI_DONE);
+  89              		.loc 1 59 0 discriminator 1
+  90 0016 FFF7FEFF 		bl	SPIM_ReadTxStatus
+  91              	.LVL10:
+  92 001a 10F0010F 		tst	r0, #1
+  93 001e FAD0     		beq	.L5
+  94              	.L6:
+  60:main.c        ****     while(SPIM_GetRxBufferSize() < 2);
+  95              		.loc 1 60 0 discriminator 1
+  96 0020 FFF7FEFF 		bl	SPIM_GetRxBufferSize
+  97              	.LVL11:
+  98 0024 0128     		cmp	r0, #1
+  99 0026 FBD9     		bls	.L6
+  61:main.c        ****     SPIM_ReadRxData();
+ 100              		.loc 1 61 0
+ 101 0028 FFF7FEFF 		bl	SPIM_ReadRxData
+ 102              	.LVL12:
+  62:main.c        ****     data = SPIM_ReadRxData();
+ 103              		.loc 1 62 0
+ 104 002c FFF7FEFF 		bl	SPIM_ReadRxData
+ 105              	.LVL13:
+ 106 0030 0446     		mov	r4, r0
+ 107              	.LVL14:
+  63:main.c        ****     SPIM_ClearRxBuffer();
+ 108              		.loc 1 63 0
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 4
+
+
+ 109 0032 FFF7FEFF 		bl	SPIM_ClearRxBuffer
+ 110              	.LVL15:
+  64:main.c        **** 
+  65:main.c        ****     return data;
+  66:main.c        **** }
+ 111              		.loc 1 66 0
+ 112 0036 2046     		mov	r0, r4
+ 113 0038 10BD     		pop	{r4, pc}
+ 114              		.cfi_endproc
+ 115              	.LFE65:
+ 116              		.size	Read_SPI, .-Read_SPI
+ 117 003a 00BF     		.section	.text.ADXL345_Init,"ax",%progbits
+ 118              		.align	2
+ 119              		.global	ADXL345_Init
+ 120              		.thumb
+ 121              		.thumb_func
+ 122              		.type	ADXL345_Init, %function
+ 123              	ADXL345_Init:
+ 124              	.LFB66:
+  67:main.c        **** 
+  68:main.c        **** void ADXL345_Init(void)
+  69:main.c        **** {
+ 125              		.loc 1 69 0
+ 126              		.cfi_startproc
+ 127              		@ args = 0, pretend = 0, frame = 0
+ 128              		@ frame_needed = 0, uses_anonymous_args = 0
+ 129 0000 08B5     		push	{r3, lr}
+ 130              		.cfi_def_cfa_offset 8
+ 131              		.cfi_offset 3, -8
+ 132              		.cfi_offset 14, -4
+  70:main.c        ****     CyDelay(2u);
+ 133              		.loc 1 70 0
+ 134 0002 0220     		movs	r0, #2
+ 135 0004 FFF7FEFF 		bl	CyDelay
+ 136              	.LVL16:
+  71:main.c        ****     Write_SPI(RA_POWER_CTL, 0x08);     //  START MEASUREMENT
+ 137              		.loc 1 71 0
+ 138 0008 0821     		movs	r1, #8
+ 139 000a 2D20     		movs	r0, #45
+ 140 000c FFF7FEFF 		bl	Write_SPI
+ 141              	.LVL17:
+  72:main.c        ****     Write_SPI(RA_BW_RATE, 0x09);       //  50 Hz
+ 142              		.loc 1 72 0
+ 143 0010 0921     		movs	r1, #9
+ 144 0012 2C20     		movs	r0, #44
+ 145 0014 FFF7FEFF 		bl	Write_SPI
+ 146              	.LVL18:
+  73:main.c        ****     Write_SPI(RA_DATA_FORMAT, 0x0);   //  +/-2g , 13-BIT MODE
+ 147              		.loc 1 73 0
+ 148 0018 0021     		movs	r1, #0
+ 149 001a 3120     		movs	r0, #49
+ 150 001c FFF7FEFF 		bl	Write_SPI
+ 151              	.LVL19:
+  74:main.c        **** 
+  75:main.c        ****     CyDelay(2u);
+ 152              		.loc 1 75 0
+ 153 0020 0220     		movs	r0, #2
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 5
+
+
+ 154 0022 FFF7FEFF 		bl	CyDelay
+ 155              	.LVL20:
+ 156 0026 08BD     		pop	{r3, pc}
+ 157              		.cfi_endproc
+ 158              	.LFE66:
+ 159              		.size	ADXL345_Init, .-ADXL345_Init
+ 160              		.global	__aeabi_i2f
+ 161              		.global	__aeabi_fmul
+ 162              		.global	__aeabi_fdiv
+ 163              		.section	.text.Get_Accel_Values,"ax",%progbits
+ 164              		.align	2
+ 165              		.global	Get_Accel_Values
+ 166              		.thumb
+ 167              		.thumb_func
+ 168              		.type	Get_Accel_Values, %function
+ 169              	Get_Accel_Values:
+ 170              	.LFB67:
+  76:main.c        **** }
+  77:main.c        **** 
+  78:main.c        **** void Get_Accel_Values(void)
+  79:main.c        **** {
+ 171              		.loc 1 79 0
+ 172              		.cfi_startproc
+ 173              		@ args = 0, pretend = 0, frame = 0
+ 174              		@ frame_needed = 0, uses_anonymous_args = 0
+ 175 0000 70B5     		push	{r4, r5, r6, lr}
+ 176              		.cfi_def_cfa_offset 16
+ 177              		.cfi_offset 4, -16
+ 178              		.cfi_offset 5, -12
+ 179              		.cfi_offset 6, -8
+ 180              		.cfi_offset 14, -4
+  80:main.c        ****     x = ((Read_SPI(RA_DATAX1) << 8) | Read_SPI(RA_DATAX0)); 
+ 181              		.loc 1 80 0
+ 182 0002 3320     		movs	r0, #51
+ 183 0004 FFF7FEFF 		bl	Read_SPI
+ 184              	.LVL21:
+ 185 0008 0402     		lsls	r4, r0, #8
+ 186 000a 3220     		movs	r0, #50
+ 187 000c FFF7FEFF 		bl	Read_SPI
+ 188              	.LVL22:
+ 189 0010 1D4D     		ldr	r5, .L12
+ 190 0012 2043     		orrs	r0, r0, r4
+ 191 0014 2880     		strh	r0, [r5]	@ movhi
+  81:main.c        ****     y = ((Read_SPI(RA_DATAY1) << 8) | Read_SPI(RA_DATAY0)); 
+ 192              		.loc 1 81 0
+ 193 0016 3520     		movs	r0, #53
+ 194 0018 FFF7FEFF 		bl	Read_SPI
+ 195              	.LVL23:
+ 196 001c 0402     		lsls	r4, r0, #8
+ 197 001e 3420     		movs	r0, #52
+ 198 0020 FFF7FEFF 		bl	Read_SPI
+ 199              	.LVL24:
+ 200 0024 194E     		ldr	r6, .L12+4
+ 201 0026 2043     		orrs	r0, r0, r4
+ 202 0028 3080     		strh	r0, [r6]	@ movhi
+  82:main.c        ****     z = ((Read_SPI(RA_DATAZ1) << 8) | Read_SPI(RA_DATAZ0)); 
+ 203              		.loc 1 82 0
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 6
+
+
+ 204 002a 3720     		movs	r0, #55
+ 205 002c FFF7FEFF 		bl	Read_SPI
+ 206              	.LVL25:
+ 207 0030 0402     		lsls	r4, r0, #8
+ 208 0032 3620     		movs	r0, #54
+ 209 0034 FFF7FEFF 		bl	Read_SPI
+ 210              	.LVL26:
+ 211 0038 2043     		orrs	r0, r0, r4
+ 212 003a 04B2     		sxth	r4, r0
+ 213 003c 144B     		ldr	r3, .L12+8
+ 214 003e 1C80     		strh	r4, [r3]	@ movhi
+  83:main.c        ****     
+  84:main.c        ****     xg = SCALE_FACTOR * (float)x / 1000.0;
+ 215              		.loc 1 84 0
+ 216 0040 B5F90000 		ldrsh	r0, [r5]
+ 217 0044 FFF7FEFF 		bl	__aeabi_i2f
+ 218              	.LVL27:
+ 219 0048 1249     		ldr	r1, .L12+12
+ 220 004a FFF7FEFF 		bl	__aeabi_fmul
+ 221              	.LVL28:
+ 222 004e 1249     		ldr	r1, .L12+16
+ 223 0050 FFF7FEFF 		bl	__aeabi_fdiv
+ 224              	.LVL29:
+ 225 0054 114B     		ldr	r3, .L12+20
+ 226 0056 1860     		str	r0, [r3]	@ float
+  85:main.c        ****     yg = SCALE_FACTOR * (float)y / 1000.0;
+ 227              		.loc 1 85 0
+ 228 0058 B6F90000 		ldrsh	r0, [r6]
+ 229 005c FFF7FEFF 		bl	__aeabi_i2f
+ 230              	.LVL30:
+ 231 0060 0C49     		ldr	r1, .L12+12
+ 232 0062 FFF7FEFF 		bl	__aeabi_fmul
+ 233              	.LVL31:
+ 234 0066 0C49     		ldr	r1, .L12+16
+ 235 0068 FFF7FEFF 		bl	__aeabi_fdiv
+ 236              	.LVL32:
+ 237 006c 0C4B     		ldr	r3, .L12+24
+ 238 006e 1860     		str	r0, [r3]	@ float
+  86:main.c        ****     zg = SCALE_FACTOR * (float)z / 1000.0;   
+ 239              		.loc 1 86 0
+ 240 0070 2046     		mov	r0, r4
+ 241 0072 FFF7FEFF 		bl	__aeabi_i2f
+ 242              	.LVL33:
+ 243 0076 0749     		ldr	r1, .L12+12
+ 244 0078 FFF7FEFF 		bl	__aeabi_fmul
+ 245              	.LVL34:
+ 246 007c 0649     		ldr	r1, .L12+16
+ 247 007e FFF7FEFF 		bl	__aeabi_fdiv
+ 248              	.LVL35:
+ 249 0082 084B     		ldr	r3, .L12+28
+ 250 0084 1860     		str	r0, [r3]	@ float
+ 251 0086 70BD     		pop	{r4, r5, r6, pc}
+ 252              	.L13:
+ 253              		.align	2
+ 254              	.L12:
+ 255 0088 00000000 		.word	x
+ 256 008c 00000000 		.word	y
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 7
+
+
+ 257 0090 00000000 		.word	z
+ 258 0094 9A997940 		.word	1081711002
+ 259 0098 00007A44 		.word	1148846080
+ 260 009c 00000000 		.word	xg
+ 261 00a0 00000000 		.word	yg
+ 262 00a4 00000000 		.word	zg
+ 263              		.cfi_endproc
+ 264              	.LFE67:
+ 265              		.size	Get_Accel_Values, .-Get_Accel_Values
+ 266              		.section	.text.Read_XYZ,"ax",%progbits
+ 267              		.align	2
+ 268              		.global	Read_XYZ
+ 269              		.thumb
+ 270              		.thumb_func
+ 271              		.type	Read_XYZ, %function
+ 272              	Read_XYZ:
+ 273              	.LFB68:
+  87:main.c        **** }
+  88:main.c        **** 
+  89:main.c        **** void Read_XYZ()     // read acceleration values in one session
+  90:main.c        **** {
+ 274              		.loc 1 90 0
+ 275              		.cfi_startproc
+ 276              		@ args = 0, pretend = 0, frame = 0
+ 277              		@ frame_needed = 0, uses_anonymous_args = 0
+ 278 0000 38B5     		push	{r3, r4, r5, lr}
+ 279              		.cfi_def_cfa_offset 16
+ 280              		.cfi_offset 3, -16
+ 281              		.cfi_offset 4, -12
+ 282              		.cfi_offset 5, -8
+ 283              		.cfi_offset 14, -4
+ 284              	.LVL36:
+  91:main.c        ****     unsigned char addr = RA_DATAX0 | SPI_READ | SPI_MULTIPLE_BIT;
+  92:main.c        ****     
+  93:main.c        ****     SPIM_ClearRxBuffer();
+ 285              		.loc 1 93 0
+ 286 0002 FFF7FEFF 		bl	SPIM_ClearRxBuffer
+ 287              	.LVL37:
+  94:main.c        ****     SPIM_WriteTxData(addr);
+ 288              		.loc 1 94 0
+ 289 0006 F220     		movs	r0, #242
+ 290 0008 FFF7FEFF 		bl	SPIM_WriteTxData
+ 291              	.LVL38:
+ 292              	.LBB2:
+  95:main.c        ****     for (int i = 0; i < 6; i++)
+ 293              		.loc 1 95 0
+ 294 000c 0024     		movs	r4, #0
+ 295 000e 03E0     		b	.L15
+ 296              	.LVL39:
+ 297              	.L16:
+  96:main.c        ****         SPIM_WriteTxData(0x00);
+ 298              		.loc 1 96 0 discriminator 3
+ 299 0010 0020     		movs	r0, #0
+ 300 0012 FFF7FEFF 		bl	SPIM_WriteTxData
+ 301              	.LVL40:
+  95:main.c        ****     for (int i = 0; i < 6; i++)
+ 302              		.loc 1 95 0 discriminator 3
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 8
+
+
+ 303 0016 0134     		adds	r4, r4, #1
+ 304              	.LVL41:
+ 305              	.L15:
+  95:main.c        ****     for (int i = 0; i < 6; i++)
+ 306              		.loc 1 95 0 is_stmt 0 discriminator 1
+ 307 0018 052C     		cmp	r4, #5
+ 308 001a F9DD     		ble	.L16
+ 309              	.L17:
+ 310              	.LBE2:
+  97:main.c        **** 
+  98:main.c        ****     while((SPIM_ReadTxStatus() & SPIM_STS_SPI_DONE) != SPIM_STS_SPI_DONE);
+ 311              		.loc 1 98 0 is_stmt 1 discriminator 1
+ 312 001c FFF7FEFF 		bl	SPIM_ReadTxStatus
+ 313              	.LVL42:
+ 314 0020 10F0010F 		tst	r0, #1
+ 315 0024 FAD0     		beq	.L17
+ 316              	.L18:
+  99:main.c        ****     while(SPIM_GetRxBufferSize() < 7);
+ 317              		.loc 1 99 0 discriminator 1
+ 318 0026 FFF7FEFF 		bl	SPIM_GetRxBufferSize
+ 319              	.LVL43:
+ 320 002a 0628     		cmp	r0, #6
+ 321 002c FBD9     		bls	.L18
+ 100:main.c        ****     SPIM_ReadRxData();
+ 322              		.loc 1 100 0
+ 323 002e FFF7FEFF 		bl	SPIM_ReadRxData
+ 324              	.LVL44:
+ 325              	.LBB3:
+ 101:main.c        ****     
+ 102:main.c        ****     for (int i = 0; i < 6; i++)
+ 326              		.loc 1 102 0
+ 327 0032 0024     		movs	r4, #0
+ 328              	.LVL45:
+ 329 0034 04E0     		b	.L19
+ 330              	.LVL46:
+ 331              	.L20:
+ 103:main.c        ****         raw[i] = SPIM_ReadRxData();
+ 332              		.loc 1 103 0 discriminator 3
+ 333 0036 FFF7FEFF 		bl	SPIM_ReadRxData
+ 334              	.LVL47:
+ 335 003a 1E4B     		ldr	r3, .L22
+ 336 003c 1855     		strb	r0, [r3, r4]
+ 102:main.c        ****         raw[i] = SPIM_ReadRxData();
+ 337              		.loc 1 102 0 discriminator 3
+ 338 003e 0134     		adds	r4, r4, #1
+ 339              	.LVL48:
+ 340              	.L19:
+ 102:main.c        ****         raw[i] = SPIM_ReadRxData();
+ 341              		.loc 1 102 0 is_stmt 0 discriminator 1
+ 342 0040 052C     		cmp	r4, #5
+ 343 0042 F8DD     		ble	.L20
+ 344              	.LBE3:
+ 104:main.c        ****     
+ 105:main.c        ****     x = (raw[1] << 8) | raw[0]; 
+ 345              		.loc 1 105 0 is_stmt 1
+ 346 0044 1B4A     		ldr	r2, .L22
+ 347 0046 5078     		ldrb	r0, [r2, #1]	@ zero_extendqisi2
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 9
+
+
+ 348 0048 1378     		ldrb	r3, [r2]	@ zero_extendqisi2
+ 349 004a 43EA0020 		orr	r0, r3, r0, lsl #8
+ 350 004e 00B2     		sxth	r0, r0
+ 351 0050 194B     		ldr	r3, .L22+4
+ 352 0052 1880     		strh	r0, [r3]	@ movhi
+ 106:main.c        ****     y = (raw[3] << 8) | raw[2]; 
+ 353              		.loc 1 106 0
+ 354 0054 D578     		ldrb	r5, [r2, #3]	@ zero_extendqisi2
+ 355 0056 9378     		ldrb	r3, [r2, #2]	@ zero_extendqisi2
+ 356 0058 43EA0525 		orr	r5, r3, r5, lsl #8
+ 357 005c 2DB2     		sxth	r5, r5
+ 358 005e 174B     		ldr	r3, .L22+8
+ 359 0060 1D80     		strh	r5, [r3]	@ movhi
+ 107:main.c        ****     z = (raw[5] << 8) | raw[4]; 
+ 360              		.loc 1 107 0
+ 361 0062 5479     		ldrb	r4, [r2, #5]	@ zero_extendqisi2
+ 362              	.LVL49:
+ 363 0064 1379     		ldrb	r3, [r2, #4]	@ zero_extendqisi2
+ 364 0066 43EA0424 		orr	r4, r3, r4, lsl #8
+ 365 006a 24B2     		sxth	r4, r4
+ 366 006c 144B     		ldr	r3, .L22+12
+ 367 006e 1C80     		strh	r4, [r3]	@ movhi
+ 108:main.c        ****     
+ 109:main.c        ****     xg = SCALE_FACTOR * (float)x / 1000.0;
+ 368              		.loc 1 109 0
+ 369 0070 FFF7FEFF 		bl	__aeabi_i2f
+ 370              	.LVL50:
+ 371 0074 1349     		ldr	r1, .L22+16
+ 372 0076 FFF7FEFF 		bl	__aeabi_fmul
+ 373              	.LVL51:
+ 374 007a 1349     		ldr	r1, .L22+20
+ 375 007c FFF7FEFF 		bl	__aeabi_fdiv
+ 376              	.LVL52:
+ 377 0080 124B     		ldr	r3, .L22+24
+ 378 0082 1860     		str	r0, [r3]	@ float
+ 110:main.c        ****     yg = SCALE_FACTOR * (float)y / 1000.0;
+ 379              		.loc 1 110 0
+ 380 0084 2846     		mov	r0, r5
+ 381 0086 FFF7FEFF 		bl	__aeabi_i2f
+ 382              	.LVL53:
+ 383 008a 0E49     		ldr	r1, .L22+16
+ 384 008c FFF7FEFF 		bl	__aeabi_fmul
+ 385              	.LVL54:
+ 386 0090 0D49     		ldr	r1, .L22+20
+ 387 0092 FFF7FEFF 		bl	__aeabi_fdiv
+ 388              	.LVL55:
+ 389 0096 0E4B     		ldr	r3, .L22+28
+ 390 0098 1860     		str	r0, [r3]	@ float
+ 111:main.c        ****     zg = SCALE_FACTOR * (float)z / 1000.0; 
+ 391              		.loc 1 111 0
+ 392 009a 2046     		mov	r0, r4
+ 393 009c FFF7FEFF 		bl	__aeabi_i2f
+ 394              	.LVL56:
+ 395 00a0 0849     		ldr	r1, .L22+16
+ 396 00a2 FFF7FEFF 		bl	__aeabi_fmul
+ 397              	.LVL57:
+ 398 00a6 0849     		ldr	r1, .L22+20
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 10
+
+
+ 399 00a8 FFF7FEFF 		bl	__aeabi_fdiv
+ 400              	.LVL58:
+ 401 00ac 094B     		ldr	r3, .L22+32
+ 402 00ae 1860     		str	r0, [r3]	@ float
+ 403 00b0 38BD     		pop	{r3, r4, r5, pc}
+ 404              	.L23:
+ 405 00b2 00BF     		.align	2
+ 406              	.L22:
+ 407 00b4 00000000 		.word	raw
+ 408 00b8 00000000 		.word	x
+ 409 00bc 00000000 		.word	y
+ 410 00c0 00000000 		.word	z
+ 411 00c4 9A997940 		.word	1081711002
+ 412 00c8 00007A44 		.word	1148846080
+ 413 00cc 00000000 		.word	xg
+ 414 00d0 00000000 		.word	yg
+ 415 00d4 00000000 		.word	zg
+ 416              		.cfi_endproc
+ 417              	.LFE68:
+ 418              		.size	Read_XYZ, .-Read_XYZ
+ 419              		.global	__aeabi_f2uiz
+ 420              		.section	.text.Offset_Calibration,"ax",%progbits
+ 421              		.align	2
+ 422              		.global	Offset_Calibration
+ 423              		.thumb
+ 424              		.thumb_func
+ 425              		.type	Offset_Calibration, %function
+ 426              	Offset_Calibration:
+ 427              	.LFB69:
+ 112:main.c        **** }
+ 113:main.c        **** 
+ 114:main.c        **** void Offset_Calibration(void)
+ 115:main.c        **** {
+ 428              		.loc 1 115 0
+ 429              		.cfi_startproc
+ 430              		@ args = 0, pretend = 0, frame = 0
+ 431              		@ frame_needed = 0, uses_anonymous_args = 0
+ 432 0000 38B5     		push	{r3, r4, r5, lr}
+ 433              		.cfi_def_cfa_offset 16
+ 434              		.cfi_offset 3, -16
+ 435              		.cfi_offset 4, -12
+ 436              		.cfi_offset 5, -8
+ 437              		.cfi_offset 14, -4
+ 116:main.c        ****     cal_X = -1 * ((Read_SPI(RA_DATAX1) << 8) | Read_SPI(RA_DATAX0));
+ 438              		.loc 1 116 0
+ 439 0002 3320     		movs	r0, #51
+ 440 0004 FFF7FEFF 		bl	Read_SPI
+ 441              	.LVL59:
+ 442 0008 0402     		lsls	r4, r0, #8
+ 443 000a 3220     		movs	r0, #50
+ 444 000c FFF7FEFF 		bl	Read_SPI
+ 445              	.LVL60:
+ 446 0010 2043     		orrs	r0, r0, r4
+ 447 0012 194C     		ldr	r4, .L26
+ 448 0014 4042     		negs	r0, r0
+ 449 0016 FFF7FEFF 		bl	__aeabi_i2f
+ 450              	.LVL61:
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 11
+
+
+ 451 001a 2060     		str	r0, [r4]	@ float
+ 117:main.c        ****     cal_Y = -1 * ((Read_SPI(RA_DATAY1) << 8) | Read_SPI(RA_DATAY0));
+ 452              		.loc 1 117 0
+ 453 001c 3520     		movs	r0, #53
+ 454 001e FFF7FEFF 		bl	Read_SPI
+ 455              	.LVL62:
+ 456 0022 0502     		lsls	r5, r0, #8
+ 457 0024 3420     		movs	r0, #52
+ 458 0026 FFF7FEFF 		bl	Read_SPI
+ 459              	.LVL63:
+ 460 002a 2843     		orrs	r0, r0, r5
+ 461 002c 4042     		negs	r0, r0
+ 462 002e FFF7FEFF 		bl	__aeabi_i2f
+ 463              	.LVL64:
+ 464 0032 6060     		str	r0, [r4, #4]	@ float
+ 118:main.c        ****     cal_Z = -1 * ((Read_SPI(RA_DATAZ1) << 8) | Read_SPI(RA_DATAZ0));
+ 465              		.loc 1 118 0
+ 466 0034 3720     		movs	r0, #55
+ 467 0036 FFF7FEFF 		bl	Read_SPI
+ 468              	.LVL65:
+ 469 003a 0502     		lsls	r5, r0, #8
+ 470 003c 3620     		movs	r0, #54
+ 471 003e FFF7FEFF 		bl	Read_SPI
+ 472              	.LVL66:
+ 473 0042 2843     		orrs	r0, r0, r5
+ 474 0044 4042     		negs	r0, r0
+ 475 0046 FFF7FEFF 		bl	__aeabi_i2f
+ 476              	.LVL67:
+ 477 004a A060     		str	r0, [r4, #8]	@ float
+ 119:main.c        ****     
+ 120:main.c        ****     Write_SPI(RA_OFSX, cal_X);
+ 478              		.loc 1 120 0
+ 479 004c 2068     		ldr	r0, [r4]	@ float
+ 480 004e FFF7FEFF 		bl	__aeabi_f2uiz
+ 481              	.LVL68:
+ 482 0052 C1B2     		uxtb	r1, r0
+ 483 0054 1E20     		movs	r0, #30
+ 484 0056 FFF7FEFF 		bl	Write_SPI
+ 485              	.LVL69:
+ 121:main.c        ****     Write_SPI(RA_OFSY, cal_Y);
+ 486              		.loc 1 121 0
+ 487 005a 6068     		ldr	r0, [r4, #4]	@ float
+ 488 005c FFF7FEFF 		bl	__aeabi_f2uiz
+ 489              	.LVL70:
+ 490 0060 C1B2     		uxtb	r1, r0
+ 491 0062 1F20     		movs	r0, #31
+ 492 0064 FFF7FEFF 		bl	Write_SPI
+ 493              	.LVL71:
+ 122:main.c        ****     Write_SPI(RA_OFSZ, cal_Z);
+ 494              		.loc 1 122 0
+ 495 0068 A068     		ldr	r0, [r4, #8]	@ float
+ 496 006a FFF7FEFF 		bl	__aeabi_f2uiz
+ 497              	.LVL72:
+ 498 006e C1B2     		uxtb	r1, r0
+ 499 0070 2020     		movs	r0, #32
+ 500 0072 FFF7FEFF 		bl	Write_SPI
+ 501              	.LVL73:
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 12
+
+
+ 502 0076 38BD     		pop	{r3, r4, r5, pc}
+ 503              	.L27:
+ 504              		.align	2
+ 505              	.L26:
+ 506 0078 00000000 		.word	.LANCHOR0
+ 507              		.cfi_endproc
+ 508              	.LFE69:
+ 509              		.size	Offset_Calibration, .-Offset_Calibration
+ 510              		.global	__aeabi_f2d
+ 511              		.section	.text.main,"ax",%progbits
+ 512              		.align	2
+ 513              		.global	main
+ 514              		.thumb
+ 515              		.thumb_func
+ 516              		.type	main, %function
+ 517              	main:
+ 518              	.LFB70:
+ 123:main.c        **** }
+ 124:main.c        **** 
+ 125:main.c        **** int main()
+ 126:main.c        **** {
+ 519              		.loc 1 126 0
+ 520              		.cfi_startproc
+ 521              		@ Volatile: function does not return.
+ 522              		@ args = 0, pretend = 0, frame = 0
+ 523              		@ frame_needed = 0, uses_anonymous_args = 0
+ 524 0000 08B5     		push	{r3, lr}
+ 525              		.cfi_def_cfa_offset 8
+ 526              		.cfi_offset 3, -8
+ 527              		.cfi_offset 14, -4
+ 127:main.c        ****     CyGlobalIntEnable; /* Enable global interrupts. */
+ 528              		.loc 1 127 0
+ 529              		.syntax unified
+ 530              	@ 127 "main.c" 1
+ 531 0002 62B6     		CPSIE   i
+ 532              	@ 0 "" 2
+ 128:main.c        **** 
+ 129:main.c        ****     SPIM_Start();
+ 533              		.loc 1 129 0
+ 534              		.thumb
+ 535              		.syntax unified
+ 536 0004 FFF7FEFF 		bl	SPIM_Start
+ 537              	.LVL74:
+ 130:main.c        ****     Clock_Start();
+ 538              		.loc 1 130 0
+ 539 0008 FFF7FEFF 		bl	Clock_Start
+ 540              	.LVL75:
+ 131:main.c        ****     UART_Start();
+ 541              		.loc 1 131 0
+ 542 000c FFF7FEFF 		bl	UART_Start
+ 543              	.LVL76:
+ 132:main.c        ****     LCD_Init();
+ 544              		.loc 1 132 0
+ 545 0010 FFF7FEFF 		bl	LCD_Init
+ 546              	.LVL77:
+ 133:main.c        ****     
+ 134:main.c        ****     ADXL345_Init();
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 13
+
+
+ 547              		.loc 1 134 0
+ 548 0014 FFF7FEFF 		bl	ADXL345_Init
+ 549              	.LVL78:
+ 135:main.c        ****     //Offset_Calibration();
+ 136:main.c        ****     
+ 137:main.c        ****     UART_PutString("***ADXL345***");
+ 550              		.loc 1 137 0
+ 551 0018 3348     		ldr	r0, .L31
+ 552 001a FFF7FEFF 		bl	UART_PutString
+ 553              	.LVL79:
+ 138:main.c        ****     UART_PutString("\r\n");
+ 554              		.loc 1 138 0
+ 555 001e 3348     		ldr	r0, .L31+4
+ 556 0020 FFF7FEFF 		bl	UART_PutString
+ 557              	.LVL80:
+ 558              	.L29:
+ 139:main.c        ****     
+ 140:main.c        ****     for(;;)
+ 141:main.c        ****     {        
+ 142:main.c        ****         Get_Accel_Values();     // reads data byte by byte in multiple sessions
+ 559              		.loc 1 142 0 discriminator 1
+ 560 0024 FFF7FEFF 		bl	Get_Accel_Values
+ 561              	.LVL81:
+ 143:main.c        ****         //Read_XYZ();           // read data in one session
+ 144:main.c        **** 
+ 145:main.c        ****         LCD_Position(0, 0);
+ 562              		.loc 1 145 0 discriminator 1
+ 563 0028 0021     		movs	r1, #0
+ 564 002a 0846     		mov	r0, r1
+ 565 002c FFF7FEFF 		bl	LCD_Position
+ 566              	.LVL82:
+ 146:main.c        ****         
+ 147:main.c        ****         sprintf(buffer,"X: %3d   ", x);
+ 567              		.loc 1 147 0 discriminator 1
+ 568 0030 2F4C     		ldr	r4, .L31+8
+ 569 0032 304B     		ldr	r3, .L31+12
+ 570 0034 B3F90020 		ldrsh	r2, [r3]
+ 571 0038 2F49     		ldr	r1, .L31+16
+ 572 003a 2046     		mov	r0, r4
+ 573 003c FFF7FEFF 		bl	sprintf
+ 574              	.LVL83:
+ 148:main.c        ****         UART_PutString(buffer);
+ 575              		.loc 1 148 0 discriminator 1
+ 576 0040 2046     		mov	r0, r4
+ 577 0042 FFF7FEFF 		bl	UART_PutString
+ 578              	.LVL84:
+ 149:main.c        ****         LCD_PrintString(buffer);
+ 579              		.loc 1 149 0 discriminator 1
+ 580 0046 2046     		mov	r0, r4
+ 581 0048 FFF7FEFF 		bl	LCD_PrintString
+ 582              	.LVL85:
+ 150:main.c        **** 
+ 151:main.c        ****         sprintf(buffer,"Y: %3d   ", y);
+ 583              		.loc 1 151 0 discriminator 1
+ 584 004c 2B4B     		ldr	r3, .L31+20
+ 585 004e B3F90020 		ldrsh	r2, [r3]
+ 586 0052 2B49     		ldr	r1, .L31+24
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 14
+
+
+ 587 0054 2046     		mov	r0, r4
+ 588 0056 FFF7FEFF 		bl	sprintf
+ 589              	.LVL86:
+ 152:main.c        ****         UART_PutString(buffer);
+ 590              		.loc 1 152 0 discriminator 1
+ 591 005a 2046     		mov	r0, r4
+ 592 005c FFF7FEFF 		bl	UART_PutString
+ 593              	.LVL87:
+ 153:main.c        ****         LCD_PrintString(buffer);
+ 594              		.loc 1 153 0 discriminator 1
+ 595 0060 2046     		mov	r0, r4
+ 596 0062 FFF7FEFF 		bl	LCD_PrintString
+ 597              	.LVL88:
+ 154:main.c        ****         
+ 155:main.c        ****         LCD_Position(1, 0);
+ 598              		.loc 1 155 0 discriminator 1
+ 599 0066 0021     		movs	r1, #0
+ 600 0068 0120     		movs	r0, #1
+ 601 006a FFF7FEFF 		bl	LCD_Position
+ 602              	.LVL89:
+ 156:main.c        **** 
+ 157:main.c        ****         sprintf(buffer,"Z: %3d   ", z);
+ 603              		.loc 1 157 0 discriminator 1
+ 604 006e 254B     		ldr	r3, .L31+28
+ 605 0070 B3F90020 		ldrsh	r2, [r3]
+ 606 0074 2449     		ldr	r1, .L31+32
+ 607 0076 2046     		mov	r0, r4
+ 608 0078 FFF7FEFF 		bl	sprintf
+ 609              	.LVL90:
+ 158:main.c        ****         UART_PutString(buffer);
+ 610              		.loc 1 158 0 discriminator 1
+ 611 007c 2046     		mov	r0, r4
+ 612 007e FFF7FEFF 		bl	UART_PutString
+ 613              	.LVL91:
+ 159:main.c        ****         LCD_PrintString(buffer);
+ 614              		.loc 1 159 0 discriminator 1
+ 615 0082 2046     		mov	r0, r4
+ 616 0084 FFF7FEFF 		bl	LCD_PrintString
+ 617              	.LVL92:
+ 160:main.c        ****         
+ 161:main.c        ****         sprintf(buffer,"Xg: %.2f   ", xg);
+ 618              		.loc 1 161 0 discriminator 1
+ 619 0088 204B     		ldr	r3, .L31+36
+ 620 008a 1868     		ldr	r0, [r3]	@ float
+ 621 008c FFF7FEFF 		bl	__aeabi_f2d
+ 622              	.LVL93:
+ 623 0090 0246     		mov	r2, r0
+ 624 0092 0B46     		mov	r3, r1
+ 625 0094 1E49     		ldr	r1, .L31+40
+ 626 0096 2046     		mov	r0, r4
+ 627 0098 FFF7FEFF 		bl	sprintf
+ 628              	.LVL94:
+ 162:main.c        ****         UART_PutString(buffer);
+ 629              		.loc 1 162 0 discriminator 1
+ 630 009c 2046     		mov	r0, r4
+ 631 009e FFF7FEFF 		bl	UART_PutString
+ 632              	.LVL95:
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 15
+
+
+ 163:main.c        **** 
+ 164:main.c        ****         sprintf(buffer,"Yg: %.2f   ", yg);
+ 633              		.loc 1 164 0 discriminator 1
+ 634 00a2 1C4B     		ldr	r3, .L31+44
+ 635 00a4 1868     		ldr	r0, [r3]	@ float
+ 636 00a6 FFF7FEFF 		bl	__aeabi_f2d
+ 637              	.LVL96:
+ 638 00aa 0246     		mov	r2, r0
+ 639 00ac 0B46     		mov	r3, r1
+ 640 00ae 1A49     		ldr	r1, .L31+48
+ 641 00b0 2046     		mov	r0, r4
+ 642 00b2 FFF7FEFF 		bl	sprintf
+ 643              	.LVL97:
+ 165:main.c        ****         UART_PutString(buffer);
+ 644              		.loc 1 165 0 discriminator 1
+ 645 00b6 2046     		mov	r0, r4
+ 646 00b8 FFF7FEFF 		bl	UART_PutString
+ 647              	.LVL98:
+ 166:main.c        **** 
+ 167:main.c        ****         sprintf(buffer,"Zg: %.2f   ", zg);
+ 648              		.loc 1 167 0 discriminator 1
+ 649 00bc 174B     		ldr	r3, .L31+52
+ 650 00be 1868     		ldr	r0, [r3]	@ float
+ 651 00c0 FFF7FEFF 		bl	__aeabi_f2d
+ 652              	.LVL99:
+ 653 00c4 0246     		mov	r2, r0
+ 654 00c6 0B46     		mov	r3, r1
+ 655 00c8 1549     		ldr	r1, .L31+56
+ 656 00ca 2046     		mov	r0, r4
+ 657 00cc FFF7FEFF 		bl	sprintf
+ 658              	.LVL100:
+ 168:main.c        ****         UART_PutString(buffer);
+ 659              		.loc 1 168 0 discriminator 1
+ 660 00d0 2046     		mov	r0, r4
+ 661 00d2 FFF7FEFF 		bl	UART_PutString
+ 662              	.LVL101:
+ 169:main.c        ****         
+ 170:main.c        ****         UART_PutString("\r\n");
+ 663              		.loc 1 170 0 discriminator 1
+ 664 00d6 0548     		ldr	r0, .L31+4
+ 665 00d8 FFF7FEFF 		bl	UART_PutString
+ 666              	.LVL102:
+ 171:main.c        ****         
+ 172:main.c        ****         CyDelay(500);
+ 667              		.loc 1 172 0 discriminator 1
+ 668 00dc 4FF4FA70 		mov	r0, #500
+ 669 00e0 FFF7FEFF 		bl	CyDelay
+ 670              	.LVL103:
+ 671 00e4 9EE7     		b	.L29
+ 672              	.L32:
+ 673 00e6 00BF     		.align	2
+ 674              	.L31:
+ 675 00e8 00000000 		.word	.LC0
+ 676 00ec 10000000 		.word	.LC1
+ 677 00f0 00000000 		.word	buffer
+ 678 00f4 00000000 		.word	x
+ 679 00f8 14000000 		.word	.LC2
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 16
+
+
+ 680 00fc 00000000 		.word	y
+ 681 0100 20000000 		.word	.LC3
+ 682 0104 00000000 		.word	z
+ 683 0108 2C000000 		.word	.LC4
+ 684 010c 00000000 		.word	xg
+ 685 0110 38000000 		.word	.LC5
+ 686 0114 00000000 		.word	yg
+ 687 0118 44000000 		.word	.LC6
+ 688 011c 00000000 		.word	zg
+ 689 0120 50000000 		.word	.LC7
+ 690              		.cfi_endproc
+ 691              	.LFE70:
+ 692              		.size	main, .-main
+ 693              		.comm	raw,6,4
+ 694              		.comm	buffer,50,4
+ 695              		.comm	zg,4,4
+ 696              		.comm	yg,4,4
+ 697              		.comm	xg,4,4
+ 698              		.comm	z,2,2
+ 699              		.comm	y,2,2
+ 700              		.comm	x,2,2
+ 701              		.global	cal_Z
+ 702              		.global	cal_Y
+ 703              		.global	cal_X
+ 704              		.section	.rodata.str1.4,"aMS",%progbits,1
+ 705              		.align	2
+ 706              	.LC0:
+ 707 0000 2A2A2A41 		.ascii	"***ADXL345***\000"
+ 707      44584C33 
+ 707      34352A2A 
+ 707      2A00
+ 708 000e 0000     		.space	2
+ 709              	.LC1:
+ 710 0010 0D0A00   		.ascii	"\015\012\000"
+ 711 0013 00       		.space	1
+ 712              	.LC2:
+ 713 0014 583A2025 		.ascii	"X: %3d   \000"
+ 713      33642020 
+ 713      2000
+ 714 001e 0000     		.space	2
+ 715              	.LC3:
+ 716 0020 593A2025 		.ascii	"Y: %3d   \000"
+ 716      33642020 
+ 716      2000
+ 717 002a 0000     		.space	2
+ 718              	.LC4:
+ 719 002c 5A3A2025 		.ascii	"Z: %3d   \000"
+ 719      33642020 
+ 719      2000
+ 720 0036 0000     		.space	2
+ 721              	.LC5:
+ 722 0038 58673A20 		.ascii	"Xg: %.2f   \000"
+ 722      252E3266 
+ 722      20202000 
+ 723              	.LC6:
+ 724 0044 59673A20 		.ascii	"Yg: %.2f   \000"
+ 724      252E3266 
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 17
+
+
+ 724      20202000 
+ 725              	.LC7:
+ 726 0050 5A673A20 		.ascii	"Zg: %.2f   \000"
+ 726      252E3266 
+ 726      20202000 
+ 727              		.bss
+ 728              		.align	2
+ 729              		.set	.LANCHOR0,. + 0
+ 730              		.type	cal_X, %object
+ 731              		.size	cal_X, 4
+ 732              	cal_X:
+ 733 0000 00000000 		.space	4
+ 734              		.type	cal_Y, %object
+ 735              		.size	cal_Y, 4
+ 736              	cal_Y:
+ 737 0004 00000000 		.space	4
+ 738              		.type	cal_Z, %object
+ 739              		.size	cal_Z, 4
+ 740              	cal_Z:
+ 741 0008 00000000 		.space	4
+ 742              		.text
+ 743              	.Letext0:
+ 744              		.file 2 "c:\\program files (x86)\\cypress\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.
+ 745              		.file 3 "c:\\program files (x86)\\cypress\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.
+ 746              		.file 4 "Generated_Source\\PSoC5/cytypes.h"
+ 747              		.file 5 "Generated_Source\\PSoC5/core_cm3.h"
+ 748              		.file 6 "Generated_Source\\PSoC5/SPIM.h"
+ 749              		.file 7 "Generated_Source\\PSoC5/CyLib.h"
+ 750              		.file 8 "Generated_Source\\PSoC5/Clock.h"
+ 751              		.file 9 "Generated_Source\\PSoC5/UART.h"
+ 752              		.file 10 "Generated_Source\\PSoC5/LCD.h"
+ 753              		.file 11 "c:\\program files (x86)\\cypress\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4
+ 754              		.section	.debug_info,"",%progbits
+ 755              	.Ldebug_info0:
+ 756 0000 F3070000 		.4byte	0x7f3
+ 757 0004 0400     		.2byte	0x4
+ 758 0006 00000000 		.4byte	.Ldebug_abbrev0
+ 759 000a 04       		.byte	0x4
+ 760 000b 01       		.uleb128 0x1
+ 761 000c D9000000 		.4byte	.LASF45
+ 762 0010 0C       		.byte	0xc
+ 763 0011 44020000 		.4byte	.LASF46
+ 764 0015 2D000000 		.4byte	.LASF47
+ 765 0019 00000000 		.4byte	.Ldebug_ranges0+0
+ 766 001d 00000000 		.4byte	0
+ 767 0021 00000000 		.4byte	.Ldebug_line0
+ 768 0025 02       		.uleb128 0x2
+ 769 0026 01       		.byte	0x1
+ 770 0027 06       		.byte	0x6
+ 771 0028 A8020000 		.4byte	.LASF0
+ 772 002c 02       		.uleb128 0x2
+ 773 002d 01       		.byte	0x1
+ 774 002e 08       		.byte	0x8
+ 775 002f CB000000 		.4byte	.LASF1
+ 776 0033 02       		.uleb128 0x2
+ 777 0034 02       		.byte	0x2
+ 778 0035 05       		.byte	0x5
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 18
+
+
+ 779 0036 6A020000 		.4byte	.LASF2
+ 780 003a 02       		.uleb128 0x2
+ 781 003b 02       		.byte	0x2
+ 782 003c 07       		.byte	0x7
+ 783 003d 5E000000 		.4byte	.LASF3
+ 784 0041 03       		.uleb128 0x3
+ 785 0042 23000000 		.4byte	.LASF9
+ 786 0046 02       		.byte	0x2
+ 787 0047 3F       		.byte	0x3f
+ 788 0048 4C000000 		.4byte	0x4c
+ 789 004c 02       		.uleb128 0x2
+ 790 004d 04       		.byte	0x4
+ 791 004e 05       		.byte	0x5
+ 792 004f 8D020000 		.4byte	.LASF4
+ 793 0053 02       		.uleb128 0x2
+ 794 0054 04       		.byte	0x4
+ 795 0055 07       		.byte	0x7
+ 796 0056 76010000 		.4byte	.LASF5
+ 797 005a 02       		.uleb128 0x2
+ 798 005b 08       		.byte	0x8
+ 799 005c 05       		.byte	0x5
+ 800 005d 36020000 		.4byte	.LASF6
+ 801 0061 02       		.uleb128 0x2
+ 802 0062 08       		.byte	0x8
+ 803 0063 07       		.byte	0x7
+ 804 0064 01020000 		.4byte	.LASF7
+ 805 0068 04       		.uleb128 0x4
+ 806 0069 04       		.byte	0x4
+ 807 006a 05       		.byte	0x5
+ 808 006b 696E7400 		.ascii	"int\000"
+ 809 006f 02       		.uleb128 0x2
+ 810 0070 04       		.byte	0x4
+ 811 0071 07       		.byte	0x7
+ 812 0072 F4010000 		.4byte	.LASF8
+ 813 0076 03       		.uleb128 0x3
+ 814 0077 93000000 		.4byte	.LASF10
+ 815 007b 03       		.byte	0x3
+ 816 007c 2C       		.byte	0x2c
+ 817 007d 41000000 		.4byte	0x41
+ 818 0081 05       		.uleb128 0x5
+ 819 0082 7B020000 		.4byte	.LASF11
+ 820 0086 04       		.byte	0x4
+ 821 0087 E801     		.2byte	0x1e8
+ 822 0089 2C000000 		.4byte	0x2c
+ 823 008d 05       		.uleb128 0x5
+ 824 008e 70010000 		.4byte	.LASF12
+ 825 0092 04       		.byte	0x4
+ 826 0093 EC01     		.2byte	0x1ec
+ 827 0095 33000000 		.4byte	0x33
+ 828 0099 02       		.uleb128 0x2
+ 829 009a 04       		.byte	0x4
+ 830 009b 04       		.byte	0x4
+ 831 009c AD000000 		.4byte	.LASF13
+ 832 00a0 02       		.uleb128 0x2
+ 833 00a1 08       		.byte	0x8
+ 834 00a2 04       		.byte	0x4
+ 835 00a3 B0010000 		.4byte	.LASF14
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 19
+
+
+ 836 00a7 02       		.uleb128 0x2
+ 837 00a8 01       		.byte	0x1
+ 838 00a9 08       		.byte	0x8
+ 839 00aa 4B020000 		.4byte	.LASF15
+ 840 00ae 02       		.uleb128 0x2
+ 841 00af 08       		.byte	0x8
+ 842 00b0 04       		.byte	0x4
+ 843 00b1 18020000 		.4byte	.LASF16
+ 844 00b5 02       		.uleb128 0x2
+ 845 00b6 04       		.byte	0x4
+ 846 00b7 07       		.byte	0x7
+ 847 00b8 24020000 		.4byte	.LASF17
+ 848 00bc 06       		.uleb128 0x6
+ 849 00bd 89000000 		.4byte	.LASF20
+ 850 00c1 01       		.byte	0x1
+ 851 00c2 2A       		.byte	0x2a
+ 852 00c3 00000000 		.4byte	.LFB64
+ 853 00c7 1A000000 		.4byte	.LFE64-.LFB64
+ 854 00cb 01       		.uleb128 0x1
+ 855 00cc 9C       		.byte	0x9c
+ 856 00cd 25010000 		.4byte	0x125
+ 857 00d1 07       		.uleb128 0x7
+ 858 00d2 72656700 		.ascii	"reg\000"
+ 859 00d6 01       		.byte	0x1
+ 860 00d7 2A       		.byte	0x2a
+ 861 00d8 2C000000 		.4byte	0x2c
+ 862 00dc 00000000 		.4byte	.LLST0
+ 863 00e0 08       		.uleb128 0x8
+ 864 00e1 B3000000 		.4byte	.LASF18
+ 865 00e5 01       		.byte	0x1
+ 866 00e6 2A       		.byte	0x2a
+ 867 00e7 2C000000 		.4byte	0x2c
+ 868 00eb 21000000 		.4byte	.LLST1
+ 869 00ef 09       		.uleb128 0x9
+ 870 00f0 9B000000 		.4byte	.LASF19
+ 871 00f4 01       		.byte	0x1
+ 872 00f5 2C       		.byte	0x2c
+ 873 00f6 2C000000 		.4byte	0x2c
+ 874 00fa 42000000 		.4byte	.LLST2
+ 875 00fe 0A       		.uleb128 0xa
+ 876 00ff 08000000 		.4byte	.LVL2
+ 877 0103 5C070000 		.4byte	0x75c
+ 878 0107 0B       		.uleb128 0xb
+ 879 0108 0E000000 		.4byte	.LVL3
+ 880 010c 5C070000 		.4byte	0x75c
+ 881 0110 1B010000 		.4byte	0x11b
+ 882 0114 0C       		.uleb128 0xc
+ 883 0115 01       		.uleb128 0x1
+ 884 0116 50       		.byte	0x50
+ 885 0117 02       		.uleb128 0x2
+ 886 0118 74       		.byte	0x74
+ 887 0119 00       		.sleb128 0
+ 888 011a 00       		.byte	0
+ 889 011b 0A       		.uleb128 0xa
+ 890 011c 12000000 		.4byte	.LVL4
+ 891 0120 67070000 		.4byte	0x767
+ 892 0124 00       		.byte	0
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 20
+
+
+ 893 0125 0D       		.uleb128 0xd
+ 894 0126 2D020000 		.4byte	.LASF24
+ 895 012a 01       		.byte	0x1
+ 896 012b 33       		.byte	0x33
+ 897 012c 2C000000 		.4byte	0x2c
+ 898 0130 00000000 		.4byte	.LFB65
+ 899 0134 3A000000 		.4byte	.LFE65-.LFB65
+ 900 0138 01       		.uleb128 0x1
+ 901 0139 9C       		.byte	0x9c
+ 902 013a C8010000 		.4byte	0x1c8
+ 903 013e 07       		.uleb128 0x7
+ 904 013f 72656700 		.ascii	"reg\000"
+ 905 0143 01       		.byte	0x1
+ 906 0144 33       		.byte	0x33
+ 907 0145 2C000000 		.4byte	0x2c
+ 908 0149 55000000 		.4byte	.LLST3
+ 909 014d 0E       		.uleb128 0xe
+ 910 014e B3000000 		.4byte	.LASF18
+ 911 0152 01       		.byte	0x1
+ 912 0153 35       		.byte	0x35
+ 913 0154 2C000000 		.4byte	0x2c
+ 914 0158 01       		.uleb128 0x1
+ 915 0159 54       		.byte	0x54
+ 916 015a 09       		.uleb128 0x9
+ 917 015b 9B000000 		.4byte	.LASF19
+ 918 015f 01       		.byte	0x1
+ 919 0160 36       		.byte	0x36
+ 920 0161 2C000000 		.4byte	0x2c
+ 921 0165 76000000 		.4byte	.LLST4
+ 922 0169 0A       		.uleb128 0xa
+ 923 016a 0A000000 		.4byte	.LVL7
+ 924 016e 72070000 		.4byte	0x772
+ 925 0172 0B       		.uleb128 0xb
+ 926 0173 10000000 		.4byte	.LVL8
+ 927 0177 5C070000 		.4byte	0x75c
+ 928 017b 86010000 		.4byte	0x186
+ 929 017f 0C       		.uleb128 0xc
+ 930 0180 01       		.uleb128 0x1
+ 931 0181 50       		.byte	0x50
+ 932 0182 02       		.uleb128 0x2
+ 933 0183 74       		.byte	0x74
+ 934 0184 00       		.sleb128 0
+ 935 0185 00       		.byte	0
+ 936 0186 0B       		.uleb128 0xb
+ 937 0187 16000000 		.4byte	.LVL9
+ 938 018b 5C070000 		.4byte	0x75c
+ 939 018f 9A010000 		.4byte	0x19a
+ 940 0193 0C       		.uleb128 0xc
+ 941 0194 01       		.uleb128 0x1
+ 942 0195 50       		.byte	0x50
+ 943 0196 02       		.uleb128 0x2
+ 944 0197 09       		.byte	0x9
+ 945 0198 FF       		.byte	0xff
+ 946 0199 00       		.byte	0
+ 947 019a 0A       		.uleb128 0xa
+ 948 019b 1A000000 		.4byte	.LVL10
+ 949 019f 67070000 		.4byte	0x767
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 21
+
+
+ 950 01a3 0A       		.uleb128 0xa
+ 951 01a4 24000000 		.4byte	.LVL11
+ 952 01a8 7D070000 		.4byte	0x77d
+ 953 01ac 0A       		.uleb128 0xa
+ 954 01ad 2C000000 		.4byte	.LVL12
+ 955 01b1 88070000 		.4byte	0x788
+ 956 01b5 0A       		.uleb128 0xa
+ 957 01b6 30000000 		.4byte	.LVL13
+ 958 01ba 88070000 		.4byte	0x788
+ 959 01be 0A       		.uleb128 0xa
+ 960 01bf 36000000 		.4byte	.LVL15
+ 961 01c3 72070000 		.4byte	0x772
+ 962 01c7 00       		.byte	0
+ 963 01c8 06       		.uleb128 0x6
+ 964 01c9 7C000000 		.4byte	.LASF21
+ 965 01cd 01       		.byte	0x1
+ 966 01ce 44       		.byte	0x44
+ 967 01cf 00000000 		.4byte	.LFB66
+ 968 01d3 28000000 		.4byte	.LFE66-.LFB66
+ 969 01d7 01       		.uleb128 0x1
+ 970 01d8 9C       		.byte	0x9c
+ 971 01d9 4B020000 		.4byte	0x24b
+ 972 01dd 0B       		.uleb128 0xb
+ 973 01de 08000000 		.4byte	.LVL16
+ 974 01e2 93070000 		.4byte	0x793
+ 975 01e6 F0010000 		.4byte	0x1f0
+ 976 01ea 0C       		.uleb128 0xc
+ 977 01eb 01       		.uleb128 0x1
+ 978 01ec 50       		.byte	0x50
+ 979 01ed 01       		.uleb128 0x1
+ 980 01ee 32       		.byte	0x32
+ 981 01ef 00       		.byte	0
+ 982 01f0 0B       		.uleb128 0xb
+ 983 01f1 10000000 		.4byte	.LVL17
+ 984 01f5 BC000000 		.4byte	0xbc
+ 985 01f9 09020000 		.4byte	0x209
+ 986 01fd 0C       		.uleb128 0xc
+ 987 01fe 01       		.uleb128 0x1
+ 988 01ff 50       		.byte	0x50
+ 989 0200 02       		.uleb128 0x2
+ 990 0201 08       		.byte	0x8
+ 991 0202 2D       		.byte	0x2d
+ 992 0203 0C       		.uleb128 0xc
+ 993 0204 01       		.uleb128 0x1
+ 994 0205 51       		.byte	0x51
+ 995 0206 01       		.uleb128 0x1
+ 996 0207 38       		.byte	0x38
+ 997 0208 00       		.byte	0
+ 998 0209 0B       		.uleb128 0xb
+ 999 020a 18000000 		.4byte	.LVL18
+ 1000 020e BC000000 		.4byte	0xbc
+ 1001 0212 22020000 		.4byte	0x222
+ 1002 0216 0C       		.uleb128 0xc
+ 1003 0217 01       		.uleb128 0x1
+ 1004 0218 50       		.byte	0x50
+ 1005 0219 02       		.uleb128 0x2
+ 1006 021a 08       		.byte	0x8
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 22
+
+
+ 1007 021b 2C       		.byte	0x2c
+ 1008 021c 0C       		.uleb128 0xc
+ 1009 021d 01       		.uleb128 0x1
+ 1010 021e 51       		.byte	0x51
+ 1011 021f 01       		.uleb128 0x1
+ 1012 0220 39       		.byte	0x39
+ 1013 0221 00       		.byte	0
+ 1014 0222 0B       		.uleb128 0xb
+ 1015 0223 20000000 		.4byte	.LVL19
+ 1016 0227 BC000000 		.4byte	0xbc
+ 1017 022b 3B020000 		.4byte	0x23b
+ 1018 022f 0C       		.uleb128 0xc
+ 1019 0230 01       		.uleb128 0x1
+ 1020 0231 50       		.byte	0x50
+ 1021 0232 02       		.uleb128 0x2
+ 1022 0233 08       		.byte	0x8
+ 1023 0234 31       		.byte	0x31
+ 1024 0235 0C       		.uleb128 0xc
+ 1025 0236 01       		.uleb128 0x1
+ 1026 0237 51       		.byte	0x51
+ 1027 0238 01       		.uleb128 0x1
+ 1028 0239 30       		.byte	0x30
+ 1029 023a 00       		.byte	0
+ 1030 023b 0F       		.uleb128 0xf
+ 1031 023c 26000000 		.4byte	.LVL20
+ 1032 0240 93070000 		.4byte	0x793
+ 1033 0244 0C       		.uleb128 0xc
+ 1034 0245 01       		.uleb128 0x1
+ 1035 0246 50       		.byte	0x50
+ 1036 0247 01       		.uleb128 0x1
+ 1037 0248 32       		.byte	0x32
+ 1038 0249 00       		.byte	0
+ 1039 024a 00       		.byte	0
+ 1040 024b 10       		.uleb128 0x10
+ 1041 024c 50020000 		.4byte	.LASF22
+ 1042 0250 01       		.byte	0x1
+ 1043 0251 4E       		.byte	0x4e
+ 1044 0252 00000000 		.4byte	.LFB67
+ 1045 0256 A8000000 		.4byte	.LFE67-.LFB67
+ 1046 025a 01       		.uleb128 0x1
+ 1047 025b 9C       		.byte	0x9c
+ 1048 025c D5020000 		.4byte	0x2d5
+ 1049 0260 0B       		.uleb128 0xb
+ 1050 0261 08000000 		.4byte	.LVL21
+ 1051 0265 25010000 		.4byte	0x125
+ 1052 0269 74020000 		.4byte	0x274
+ 1053 026d 0C       		.uleb128 0xc
+ 1054 026e 01       		.uleb128 0x1
+ 1055 026f 50       		.byte	0x50
+ 1056 0270 02       		.uleb128 0x2
+ 1057 0271 08       		.byte	0x8
+ 1058 0272 33       		.byte	0x33
+ 1059 0273 00       		.byte	0
+ 1060 0274 0B       		.uleb128 0xb
+ 1061 0275 10000000 		.4byte	.LVL22
+ 1062 0279 25010000 		.4byte	0x125
+ 1063 027d 88020000 		.4byte	0x288
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 23
+
+
+ 1064 0281 0C       		.uleb128 0xc
+ 1065 0282 01       		.uleb128 0x1
+ 1066 0283 50       		.byte	0x50
+ 1067 0284 02       		.uleb128 0x2
+ 1068 0285 08       		.byte	0x8
+ 1069 0286 32       		.byte	0x32
+ 1070 0287 00       		.byte	0
+ 1071 0288 0B       		.uleb128 0xb
+ 1072 0289 1C000000 		.4byte	.LVL23
+ 1073 028d 25010000 		.4byte	0x125
+ 1074 0291 9C020000 		.4byte	0x29c
+ 1075 0295 0C       		.uleb128 0xc
+ 1076 0296 01       		.uleb128 0x1
+ 1077 0297 50       		.byte	0x50
+ 1078 0298 02       		.uleb128 0x2
+ 1079 0299 08       		.byte	0x8
+ 1080 029a 35       		.byte	0x35
+ 1081 029b 00       		.byte	0
+ 1082 029c 0B       		.uleb128 0xb
+ 1083 029d 24000000 		.4byte	.LVL24
+ 1084 02a1 25010000 		.4byte	0x125
+ 1085 02a5 B0020000 		.4byte	0x2b0
+ 1086 02a9 0C       		.uleb128 0xc
+ 1087 02aa 01       		.uleb128 0x1
+ 1088 02ab 50       		.byte	0x50
+ 1089 02ac 02       		.uleb128 0x2
+ 1090 02ad 08       		.byte	0x8
+ 1091 02ae 34       		.byte	0x34
+ 1092 02af 00       		.byte	0
+ 1093 02b0 0B       		.uleb128 0xb
+ 1094 02b1 30000000 		.4byte	.LVL25
+ 1095 02b5 25010000 		.4byte	0x125
+ 1096 02b9 C4020000 		.4byte	0x2c4
+ 1097 02bd 0C       		.uleb128 0xc
+ 1098 02be 01       		.uleb128 0x1
+ 1099 02bf 50       		.byte	0x50
+ 1100 02c0 02       		.uleb128 0x2
+ 1101 02c1 08       		.byte	0x8
+ 1102 02c2 37       		.byte	0x37
+ 1103 02c3 00       		.byte	0
+ 1104 02c4 0F       		.uleb128 0xf
+ 1105 02c5 38000000 		.4byte	.LVL26
+ 1106 02c9 25010000 		.4byte	0x125
+ 1107 02cd 0C       		.uleb128 0xc
+ 1108 02ce 01       		.uleb128 0x1
+ 1109 02cf 50       		.byte	0x50
+ 1110 02d0 02       		.uleb128 0x2
+ 1111 02d1 08       		.byte	0x8
+ 1112 02d2 36       		.byte	0x36
+ 1113 02d3 00       		.byte	0
+ 1114 02d4 00       		.byte	0
+ 1115 02d5 11       		.uleb128 0x11
+ 1116 02d6 67010000 		.4byte	.LASF48
+ 1117 02da 01       		.byte	0x1
+ 1118 02db 59       		.byte	0x59
+ 1119 02dc 00000000 		.4byte	.LFB68
+ 1120 02e0 D8000000 		.4byte	.LFE68-.LFB68
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 24
+
+
+ 1121 02e4 01       		.uleb128 0x1
+ 1122 02e5 9C       		.byte	0x9c
+ 1123 02e6 7D030000 		.4byte	0x37d
+ 1124 02ea 12       		.uleb128 0x12
+ 1125 02eb 9B000000 		.4byte	.LASF19
+ 1126 02ef 01       		.byte	0x1
+ 1127 02f0 5B       		.byte	0x5b
+ 1128 02f1 2C000000 		.4byte	0x2c
+ 1129 02f5 72       		.sleb128 -14
+ 1130 02f6 13       		.uleb128 0x13
+ 1131 02f7 0C000000 		.4byte	.LBB2
+ 1132 02fb 10000000 		.4byte	.LBE2-.LBB2
+ 1133 02ff 20030000 		.4byte	0x320
+ 1134 0303 14       		.uleb128 0x14
+ 1135 0304 6900     		.ascii	"i\000"
+ 1136 0306 01       		.byte	0x1
+ 1137 0307 5F       		.byte	0x5f
+ 1138 0308 68000000 		.4byte	0x68
+ 1139 030c 89000000 		.4byte	.LLST5
+ 1140 0310 0F       		.uleb128 0xf
+ 1141 0311 16000000 		.4byte	.LVL40
+ 1142 0315 5C070000 		.4byte	0x75c
+ 1143 0319 0C       		.uleb128 0xc
+ 1144 031a 01       		.uleb128 0x1
+ 1145 031b 50       		.byte	0x50
+ 1146 031c 01       		.uleb128 0x1
+ 1147 031d 30       		.byte	0x30
+ 1148 031e 00       		.byte	0
+ 1149 031f 00       		.byte	0
+ 1150 0320 13       		.uleb128 0x13
+ 1151 0321 32000000 		.4byte	.LBB3
+ 1152 0325 12000000 		.4byte	.LBE3-.LBB3
+ 1153 0329 44030000 		.4byte	0x344
+ 1154 032d 14       		.uleb128 0x14
+ 1155 032e 6900     		.ascii	"i\000"
+ 1156 0330 01       		.byte	0x1
+ 1157 0331 66       		.byte	0x66
+ 1158 0332 68000000 		.4byte	0x68
+ 1159 0336 A8000000 		.4byte	.LLST6
+ 1160 033a 0A       		.uleb128 0xa
+ 1161 033b 3A000000 		.4byte	.LVL47
+ 1162 033f 88070000 		.4byte	0x788
+ 1163 0343 00       		.byte	0
+ 1164 0344 0A       		.uleb128 0xa
+ 1165 0345 06000000 		.4byte	.LVL37
+ 1166 0349 72070000 		.4byte	0x772
+ 1167 034d 0B       		.uleb128 0xb
+ 1168 034e 0C000000 		.4byte	.LVL38
+ 1169 0352 5C070000 		.4byte	0x75c
+ 1170 0356 61030000 		.4byte	0x361
+ 1171 035a 0C       		.uleb128 0xc
+ 1172 035b 01       		.uleb128 0x1
+ 1173 035c 50       		.byte	0x50
+ 1174 035d 02       		.uleb128 0x2
+ 1175 035e 09       		.byte	0x9
+ 1176 035f F2       		.byte	0xf2
+ 1177 0360 00       		.byte	0
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 25
+
+
+ 1178 0361 0A       		.uleb128 0xa
+ 1179 0362 20000000 		.4byte	.LVL42
+ 1180 0366 67070000 		.4byte	0x767
+ 1181 036a 0A       		.uleb128 0xa
+ 1182 036b 2A000000 		.4byte	.LVL43
+ 1183 036f 7D070000 		.4byte	0x77d
+ 1184 0373 0A       		.uleb128 0xa
+ 1185 0374 32000000 		.4byte	.LVL44
+ 1186 0378 88070000 		.4byte	0x788
+ 1187 037c 00       		.byte	0
+ 1188 037d 10       		.uleb128 0x10
+ 1189 037e B7010000 		.4byte	.LASF23
+ 1190 0382 01       		.byte	0x1
+ 1191 0383 72       		.byte	0x72
+ 1192 0384 00000000 		.4byte	.LFB69
+ 1193 0388 7C000000 		.4byte	.LFE69-.LFB69
+ 1194 038c 01       		.uleb128 0x1
+ 1195 038d 9C       		.byte	0x9c
+ 1196 038e 41040000 		.4byte	0x441
+ 1197 0392 0B       		.uleb128 0xb
+ 1198 0393 08000000 		.4byte	.LVL59
+ 1199 0397 25010000 		.4byte	0x125
+ 1200 039b A6030000 		.4byte	0x3a6
+ 1201 039f 0C       		.uleb128 0xc
+ 1202 03a0 01       		.uleb128 0x1
+ 1203 03a1 50       		.byte	0x50
+ 1204 03a2 02       		.uleb128 0x2
+ 1205 03a3 08       		.byte	0x8
+ 1206 03a4 33       		.byte	0x33
+ 1207 03a5 00       		.byte	0
+ 1208 03a6 0B       		.uleb128 0xb
+ 1209 03a7 10000000 		.4byte	.LVL60
+ 1210 03ab 25010000 		.4byte	0x125
+ 1211 03af BA030000 		.4byte	0x3ba
+ 1212 03b3 0C       		.uleb128 0xc
+ 1213 03b4 01       		.uleb128 0x1
+ 1214 03b5 50       		.byte	0x50
+ 1215 03b6 02       		.uleb128 0x2
+ 1216 03b7 08       		.byte	0x8
+ 1217 03b8 32       		.byte	0x32
+ 1218 03b9 00       		.byte	0
+ 1219 03ba 0B       		.uleb128 0xb
+ 1220 03bb 22000000 		.4byte	.LVL62
+ 1221 03bf 25010000 		.4byte	0x125
+ 1222 03c3 CE030000 		.4byte	0x3ce
+ 1223 03c7 0C       		.uleb128 0xc
+ 1224 03c8 01       		.uleb128 0x1
+ 1225 03c9 50       		.byte	0x50
+ 1226 03ca 02       		.uleb128 0x2
+ 1227 03cb 08       		.byte	0x8
+ 1228 03cc 35       		.byte	0x35
+ 1229 03cd 00       		.byte	0
+ 1230 03ce 0B       		.uleb128 0xb
+ 1231 03cf 2A000000 		.4byte	.LVL63
+ 1232 03d3 25010000 		.4byte	0x125
+ 1233 03d7 E2030000 		.4byte	0x3e2
+ 1234 03db 0C       		.uleb128 0xc
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 26
+
+
+ 1235 03dc 01       		.uleb128 0x1
+ 1236 03dd 50       		.byte	0x50
+ 1237 03de 02       		.uleb128 0x2
+ 1238 03df 08       		.byte	0x8
+ 1239 03e0 34       		.byte	0x34
+ 1240 03e1 00       		.byte	0
+ 1241 03e2 0B       		.uleb128 0xb
+ 1242 03e3 3A000000 		.4byte	.LVL65
+ 1243 03e7 25010000 		.4byte	0x125
+ 1244 03eb F6030000 		.4byte	0x3f6
+ 1245 03ef 0C       		.uleb128 0xc
+ 1246 03f0 01       		.uleb128 0x1
+ 1247 03f1 50       		.byte	0x50
+ 1248 03f2 02       		.uleb128 0x2
+ 1249 03f3 08       		.byte	0x8
+ 1250 03f4 37       		.byte	0x37
+ 1251 03f5 00       		.byte	0
+ 1252 03f6 0B       		.uleb128 0xb
+ 1253 03f7 42000000 		.4byte	.LVL66
+ 1254 03fb 25010000 		.4byte	0x125
+ 1255 03ff 0A040000 		.4byte	0x40a
+ 1256 0403 0C       		.uleb128 0xc
+ 1257 0404 01       		.uleb128 0x1
+ 1258 0405 50       		.byte	0x50
+ 1259 0406 02       		.uleb128 0x2
+ 1260 0407 08       		.byte	0x8
+ 1261 0408 36       		.byte	0x36
+ 1262 0409 00       		.byte	0
+ 1263 040a 0B       		.uleb128 0xb
+ 1264 040b 5A000000 		.4byte	.LVL69
+ 1265 040f BC000000 		.4byte	0xbc
+ 1266 0413 1D040000 		.4byte	0x41d
+ 1267 0417 0C       		.uleb128 0xc
+ 1268 0418 01       		.uleb128 0x1
+ 1269 0419 50       		.byte	0x50
+ 1270 041a 01       		.uleb128 0x1
+ 1271 041b 4E       		.byte	0x4e
+ 1272 041c 00       		.byte	0
+ 1273 041d 0B       		.uleb128 0xb
+ 1274 041e 68000000 		.4byte	.LVL71
+ 1275 0422 BC000000 		.4byte	0xbc
+ 1276 0426 30040000 		.4byte	0x430
+ 1277 042a 0C       		.uleb128 0xc
+ 1278 042b 01       		.uleb128 0x1
+ 1279 042c 50       		.byte	0x50
+ 1280 042d 01       		.uleb128 0x1
+ 1281 042e 4F       		.byte	0x4f
+ 1282 042f 00       		.byte	0
+ 1283 0430 0F       		.uleb128 0xf
+ 1284 0431 76000000 		.4byte	.LVL73
+ 1285 0435 BC000000 		.4byte	0xbc
+ 1286 0439 0C       		.uleb128 0xc
+ 1287 043a 01       		.uleb128 0x1
+ 1288 043b 50       		.byte	0x50
+ 1289 043c 02       		.uleb128 0x2
+ 1290 043d 08       		.byte	0x8
+ 1291 043e 20       		.byte	0x20
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 27
+
+
+ 1292 043f 00       		.byte	0
+ 1293 0440 00       		.byte	0
+ 1294 0441 15       		.uleb128 0x15
+ 1295 0442 EF010000 		.4byte	.LASF25
+ 1296 0446 01       		.byte	0x1
+ 1297 0447 7D       		.byte	0x7d
+ 1298 0448 68000000 		.4byte	0x68
+ 1299 044c 00000000 		.4byte	.LFB70
+ 1300 0450 24010000 		.4byte	.LFE70-.LFB70
+ 1301 0454 01       		.uleb128 0x1
+ 1302 0455 9C       		.byte	0x9c
+ 1303 0456 79060000 		.4byte	0x679
+ 1304 045a 0A       		.uleb128 0xa
+ 1305 045b 08000000 		.4byte	.LVL74
+ 1306 045f 9E070000 		.4byte	0x79e
+ 1307 0463 0A       		.uleb128 0xa
+ 1308 0464 0C000000 		.4byte	.LVL75
+ 1309 0468 A9070000 		.4byte	0x7a9
+ 1310 046c 0A       		.uleb128 0xa
+ 1311 046d 10000000 		.4byte	.LVL76
+ 1312 0471 B4070000 		.4byte	0x7b4
+ 1313 0475 0A       		.uleb128 0xa
+ 1314 0476 14000000 		.4byte	.LVL77
+ 1315 047a BF070000 		.4byte	0x7bf
+ 1316 047e 0A       		.uleb128 0xa
+ 1317 047f 18000000 		.4byte	.LVL78
+ 1318 0483 C8010000 		.4byte	0x1c8
+ 1319 0487 0B       		.uleb128 0xb
+ 1320 0488 1E000000 		.4byte	.LVL79
+ 1321 048c CA070000 		.4byte	0x7ca
+ 1322 0490 9E040000 		.4byte	0x49e
+ 1323 0494 0C       		.uleb128 0xc
+ 1324 0495 01       		.uleb128 0x1
+ 1325 0496 50       		.byte	0x50
+ 1326 0497 05       		.uleb128 0x5
+ 1327 0498 03       		.byte	0x3
+ 1328 0499 00000000 		.4byte	.LC0
+ 1329 049d 00       		.byte	0
+ 1330 049e 0B       		.uleb128 0xb
+ 1331 049f 24000000 		.4byte	.LVL80
+ 1332 04a3 CA070000 		.4byte	0x7ca
+ 1333 04a7 B5040000 		.4byte	0x4b5
+ 1334 04ab 0C       		.uleb128 0xc
+ 1335 04ac 01       		.uleb128 0x1
+ 1336 04ad 50       		.byte	0x50
+ 1337 04ae 05       		.uleb128 0x5
+ 1338 04af 03       		.byte	0x3
+ 1339 04b0 10000000 		.4byte	.LC1
+ 1340 04b4 00       		.byte	0
+ 1341 04b5 0A       		.uleb128 0xa
+ 1342 04b6 28000000 		.4byte	.LVL81
+ 1343 04ba 4B020000 		.4byte	0x24b
+ 1344 04be 0B       		.uleb128 0xb
+ 1345 04bf 30000000 		.4byte	.LVL82
+ 1346 04c3 D5070000 		.4byte	0x7d5
+ 1347 04c7 D6040000 		.4byte	0x4d6
+ 1348 04cb 0C       		.uleb128 0xc
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 28
+
+
+ 1349 04cc 01       		.uleb128 0x1
+ 1350 04cd 50       		.byte	0x50
+ 1351 04ce 01       		.uleb128 0x1
+ 1352 04cf 30       		.byte	0x30
+ 1353 04d0 0C       		.uleb128 0xc
+ 1354 04d1 01       		.uleb128 0x1
+ 1355 04d2 51       		.byte	0x51
+ 1356 04d3 01       		.uleb128 0x1
+ 1357 04d4 30       		.byte	0x30
+ 1358 04d5 00       		.byte	0
+ 1359 04d6 0B       		.uleb128 0xb
+ 1360 04d7 40000000 		.4byte	.LVL83
+ 1361 04db E0070000 		.4byte	0x7e0
+ 1362 04df F3040000 		.4byte	0x4f3
+ 1363 04e3 0C       		.uleb128 0xc
+ 1364 04e4 01       		.uleb128 0x1
+ 1365 04e5 50       		.byte	0x50
+ 1366 04e6 02       		.uleb128 0x2
+ 1367 04e7 74       		.byte	0x74
+ 1368 04e8 00       		.sleb128 0
+ 1369 04e9 0C       		.uleb128 0xc
+ 1370 04ea 01       		.uleb128 0x1
+ 1371 04eb 51       		.byte	0x51
+ 1372 04ec 05       		.uleb128 0x5
+ 1373 04ed 03       		.byte	0x3
+ 1374 04ee 14000000 		.4byte	.LC2
+ 1375 04f2 00       		.byte	0
+ 1376 04f3 0B       		.uleb128 0xb
+ 1377 04f4 46000000 		.4byte	.LVL84
+ 1378 04f8 CA070000 		.4byte	0x7ca
+ 1379 04fc 07050000 		.4byte	0x507
+ 1380 0500 0C       		.uleb128 0xc
+ 1381 0501 01       		.uleb128 0x1
+ 1382 0502 50       		.byte	0x50
+ 1383 0503 02       		.uleb128 0x2
+ 1384 0504 74       		.byte	0x74
+ 1385 0505 00       		.sleb128 0
+ 1386 0506 00       		.byte	0
+ 1387 0507 0B       		.uleb128 0xb
+ 1388 0508 4C000000 		.4byte	.LVL85
+ 1389 050c EB070000 		.4byte	0x7eb
+ 1390 0510 1B050000 		.4byte	0x51b
+ 1391 0514 0C       		.uleb128 0xc
+ 1392 0515 01       		.uleb128 0x1
+ 1393 0516 50       		.byte	0x50
+ 1394 0517 02       		.uleb128 0x2
+ 1395 0518 74       		.byte	0x74
+ 1396 0519 00       		.sleb128 0
+ 1397 051a 00       		.byte	0
+ 1398 051b 0B       		.uleb128 0xb
+ 1399 051c 5A000000 		.4byte	.LVL86
+ 1400 0520 E0070000 		.4byte	0x7e0
+ 1401 0524 38050000 		.4byte	0x538
+ 1402 0528 0C       		.uleb128 0xc
+ 1403 0529 01       		.uleb128 0x1
+ 1404 052a 50       		.byte	0x50
+ 1405 052b 02       		.uleb128 0x2
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 29
+
+
+ 1406 052c 74       		.byte	0x74
+ 1407 052d 00       		.sleb128 0
+ 1408 052e 0C       		.uleb128 0xc
+ 1409 052f 01       		.uleb128 0x1
+ 1410 0530 51       		.byte	0x51
+ 1411 0531 05       		.uleb128 0x5
+ 1412 0532 03       		.byte	0x3
+ 1413 0533 20000000 		.4byte	.LC3
+ 1414 0537 00       		.byte	0
+ 1415 0538 0B       		.uleb128 0xb
+ 1416 0539 60000000 		.4byte	.LVL87
+ 1417 053d CA070000 		.4byte	0x7ca
+ 1418 0541 4C050000 		.4byte	0x54c
+ 1419 0545 0C       		.uleb128 0xc
+ 1420 0546 01       		.uleb128 0x1
+ 1421 0547 50       		.byte	0x50
+ 1422 0548 02       		.uleb128 0x2
+ 1423 0549 74       		.byte	0x74
+ 1424 054a 00       		.sleb128 0
+ 1425 054b 00       		.byte	0
+ 1426 054c 0B       		.uleb128 0xb
+ 1427 054d 66000000 		.4byte	.LVL88
+ 1428 0551 EB070000 		.4byte	0x7eb
+ 1429 0555 60050000 		.4byte	0x560
+ 1430 0559 0C       		.uleb128 0xc
+ 1431 055a 01       		.uleb128 0x1
+ 1432 055b 50       		.byte	0x50
+ 1433 055c 02       		.uleb128 0x2
+ 1434 055d 74       		.byte	0x74
+ 1435 055e 00       		.sleb128 0
+ 1436 055f 00       		.byte	0
+ 1437 0560 0B       		.uleb128 0xb
+ 1438 0561 6E000000 		.4byte	.LVL89
+ 1439 0565 D5070000 		.4byte	0x7d5
+ 1440 0569 78050000 		.4byte	0x578
+ 1441 056d 0C       		.uleb128 0xc
+ 1442 056e 01       		.uleb128 0x1
+ 1443 056f 50       		.byte	0x50
+ 1444 0570 01       		.uleb128 0x1
+ 1445 0571 31       		.byte	0x31
+ 1446 0572 0C       		.uleb128 0xc
+ 1447 0573 01       		.uleb128 0x1
+ 1448 0574 51       		.byte	0x51
+ 1449 0575 01       		.uleb128 0x1
+ 1450 0576 30       		.byte	0x30
+ 1451 0577 00       		.byte	0
+ 1452 0578 0B       		.uleb128 0xb
+ 1453 0579 7C000000 		.4byte	.LVL90
+ 1454 057d E0070000 		.4byte	0x7e0
+ 1455 0581 95050000 		.4byte	0x595
+ 1456 0585 0C       		.uleb128 0xc
+ 1457 0586 01       		.uleb128 0x1
+ 1458 0587 50       		.byte	0x50
+ 1459 0588 02       		.uleb128 0x2
+ 1460 0589 74       		.byte	0x74
+ 1461 058a 00       		.sleb128 0
+ 1462 058b 0C       		.uleb128 0xc
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 30
+
+
+ 1463 058c 01       		.uleb128 0x1
+ 1464 058d 51       		.byte	0x51
+ 1465 058e 05       		.uleb128 0x5
+ 1466 058f 03       		.byte	0x3
+ 1467 0590 2C000000 		.4byte	.LC4
+ 1468 0594 00       		.byte	0
+ 1469 0595 0B       		.uleb128 0xb
+ 1470 0596 82000000 		.4byte	.LVL91
+ 1471 059a CA070000 		.4byte	0x7ca
+ 1472 059e A9050000 		.4byte	0x5a9
+ 1473 05a2 0C       		.uleb128 0xc
+ 1474 05a3 01       		.uleb128 0x1
+ 1475 05a4 50       		.byte	0x50
+ 1476 05a5 02       		.uleb128 0x2
+ 1477 05a6 74       		.byte	0x74
+ 1478 05a7 00       		.sleb128 0
+ 1479 05a8 00       		.byte	0
+ 1480 05a9 0B       		.uleb128 0xb
+ 1481 05aa 88000000 		.4byte	.LVL92
+ 1482 05ae EB070000 		.4byte	0x7eb
+ 1483 05b2 BD050000 		.4byte	0x5bd
+ 1484 05b6 0C       		.uleb128 0xc
+ 1485 05b7 01       		.uleb128 0x1
+ 1486 05b8 50       		.byte	0x50
+ 1487 05b9 02       		.uleb128 0x2
+ 1488 05ba 74       		.byte	0x74
+ 1489 05bb 00       		.sleb128 0
+ 1490 05bc 00       		.byte	0
+ 1491 05bd 0B       		.uleb128 0xb
+ 1492 05be 9C000000 		.4byte	.LVL94
+ 1493 05c2 E0070000 		.4byte	0x7e0
+ 1494 05c6 DA050000 		.4byte	0x5da
+ 1495 05ca 0C       		.uleb128 0xc
+ 1496 05cb 01       		.uleb128 0x1
+ 1497 05cc 50       		.byte	0x50
+ 1498 05cd 02       		.uleb128 0x2
+ 1499 05ce 74       		.byte	0x74
+ 1500 05cf 00       		.sleb128 0
+ 1501 05d0 0C       		.uleb128 0xc
+ 1502 05d1 01       		.uleb128 0x1
+ 1503 05d2 51       		.byte	0x51
+ 1504 05d3 05       		.uleb128 0x5
+ 1505 05d4 03       		.byte	0x3
+ 1506 05d5 38000000 		.4byte	.LC5
+ 1507 05d9 00       		.byte	0
+ 1508 05da 0B       		.uleb128 0xb
+ 1509 05db A2000000 		.4byte	.LVL95
+ 1510 05df CA070000 		.4byte	0x7ca
+ 1511 05e3 EE050000 		.4byte	0x5ee
+ 1512 05e7 0C       		.uleb128 0xc
+ 1513 05e8 01       		.uleb128 0x1
+ 1514 05e9 50       		.byte	0x50
+ 1515 05ea 02       		.uleb128 0x2
+ 1516 05eb 74       		.byte	0x74
+ 1517 05ec 00       		.sleb128 0
+ 1518 05ed 00       		.byte	0
+ 1519 05ee 0B       		.uleb128 0xb
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 31
+
+
+ 1520 05ef B6000000 		.4byte	.LVL97
+ 1521 05f3 E0070000 		.4byte	0x7e0
+ 1522 05f7 0B060000 		.4byte	0x60b
+ 1523 05fb 0C       		.uleb128 0xc
+ 1524 05fc 01       		.uleb128 0x1
+ 1525 05fd 50       		.byte	0x50
+ 1526 05fe 02       		.uleb128 0x2
+ 1527 05ff 74       		.byte	0x74
+ 1528 0600 00       		.sleb128 0
+ 1529 0601 0C       		.uleb128 0xc
+ 1530 0602 01       		.uleb128 0x1
+ 1531 0603 51       		.byte	0x51
+ 1532 0604 05       		.uleb128 0x5
+ 1533 0605 03       		.byte	0x3
+ 1534 0606 44000000 		.4byte	.LC6
+ 1535 060a 00       		.byte	0
+ 1536 060b 0B       		.uleb128 0xb
+ 1537 060c BC000000 		.4byte	.LVL98
+ 1538 0610 CA070000 		.4byte	0x7ca
+ 1539 0614 1F060000 		.4byte	0x61f
+ 1540 0618 0C       		.uleb128 0xc
+ 1541 0619 01       		.uleb128 0x1
+ 1542 061a 50       		.byte	0x50
+ 1543 061b 02       		.uleb128 0x2
+ 1544 061c 74       		.byte	0x74
+ 1545 061d 00       		.sleb128 0
+ 1546 061e 00       		.byte	0
+ 1547 061f 0B       		.uleb128 0xb
+ 1548 0620 D0000000 		.4byte	.LVL100
+ 1549 0624 E0070000 		.4byte	0x7e0
+ 1550 0628 3C060000 		.4byte	0x63c
+ 1551 062c 0C       		.uleb128 0xc
+ 1552 062d 01       		.uleb128 0x1
+ 1553 062e 50       		.byte	0x50
+ 1554 062f 02       		.uleb128 0x2
+ 1555 0630 74       		.byte	0x74
+ 1556 0631 00       		.sleb128 0
+ 1557 0632 0C       		.uleb128 0xc
+ 1558 0633 01       		.uleb128 0x1
+ 1559 0634 51       		.byte	0x51
+ 1560 0635 05       		.uleb128 0x5
+ 1561 0636 03       		.byte	0x3
+ 1562 0637 50000000 		.4byte	.LC7
+ 1563 063b 00       		.byte	0
+ 1564 063c 0B       		.uleb128 0xb
+ 1565 063d D6000000 		.4byte	.LVL101
+ 1566 0641 CA070000 		.4byte	0x7ca
+ 1567 0645 50060000 		.4byte	0x650
+ 1568 0649 0C       		.uleb128 0xc
+ 1569 064a 01       		.uleb128 0x1
+ 1570 064b 50       		.byte	0x50
+ 1571 064c 02       		.uleb128 0x2
+ 1572 064d 74       		.byte	0x74
+ 1573 064e 00       		.sleb128 0
+ 1574 064f 00       		.byte	0
+ 1575 0650 0B       		.uleb128 0xb
+ 1576 0651 DC000000 		.4byte	.LVL102
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 32
+
+
+ 1577 0655 CA070000 		.4byte	0x7ca
+ 1578 0659 67060000 		.4byte	0x667
+ 1579 065d 0C       		.uleb128 0xc
+ 1580 065e 01       		.uleb128 0x1
+ 1581 065f 50       		.byte	0x50
+ 1582 0660 05       		.uleb128 0x5
+ 1583 0661 03       		.byte	0x3
+ 1584 0662 10000000 		.4byte	.LC1
+ 1585 0666 00       		.byte	0
+ 1586 0667 0F       		.uleb128 0xf
+ 1587 0668 E4000000 		.4byte	.LVL103
+ 1588 066c 93070000 		.4byte	0x793
+ 1589 0670 0C       		.uleb128 0xc
+ 1590 0671 01       		.uleb128 0x1
+ 1591 0672 50       		.byte	0x50
+ 1592 0673 03       		.uleb128 0x3
+ 1593 0674 0A       		.byte	0xa
+ 1594 0675 F401     		.2byte	0x1f4
+ 1595 0677 00       		.byte	0
+ 1596 0678 00       		.byte	0
+ 1597 0679 16       		.uleb128 0x16
+ 1598 067a 93010000 		.4byte	.LASF26
+ 1599 067e 05       		.byte	0x5
+ 1600 067f 1207     		.2byte	0x712
+ 1601 0681 85060000 		.4byte	0x685
+ 1602 0685 17       		.uleb128 0x17
+ 1603 0686 76000000 		.4byte	0x76
+ 1604 068a 18       		.uleb128 0x18
+ 1605 068b 96020000 		.4byte	.LASF27
+ 1606 068f 01       		.byte	0x1
+ 1607 0690 24       		.byte	0x24
+ 1608 0691 99000000 		.4byte	0x99
+ 1609 0695 05       		.uleb128 0x5
+ 1610 0696 03       		.byte	0x3
+ 1611 0697 00000000 		.4byte	cal_X
+ 1612 069b 18       		.uleb128 0x18
+ 1613 069c 9C020000 		.4byte	.LASF28
+ 1614 06a0 01       		.byte	0x1
+ 1615 06a1 24       		.byte	0x24
+ 1616 06a2 99000000 		.4byte	0x99
+ 1617 06a6 05       		.uleb128 0x5
+ 1618 06a7 03       		.byte	0x3
+ 1619 06a8 00000000 		.4byte	cal_Y
+ 1620 06ac 18       		.uleb128 0x18
+ 1621 06ad A2020000 		.4byte	.LASF29
+ 1622 06b1 01       		.byte	0x1
+ 1623 06b2 24       		.byte	0x24
+ 1624 06b3 99000000 		.4byte	0x99
+ 1625 06b7 05       		.uleb128 0x5
+ 1626 06b8 03       		.byte	0x3
+ 1627 06b9 00000000 		.4byte	cal_Z
+ 1628 06bd 19       		.uleb128 0x19
+ 1629 06be 7800     		.ascii	"x\000"
+ 1630 06c0 01       		.byte	0x1
+ 1631 06c1 25       		.byte	0x25
+ 1632 06c2 8D000000 		.4byte	0x8d
+ 1633 06c6 05       		.uleb128 0x5
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 33
+
+
+ 1634 06c7 03       		.byte	0x3
+ 1635 06c8 00000000 		.4byte	x
+ 1636 06cc 19       		.uleb128 0x19
+ 1637 06cd 7900     		.ascii	"y\000"
+ 1638 06cf 01       		.byte	0x1
+ 1639 06d0 25       		.byte	0x25
+ 1640 06d1 8D000000 		.4byte	0x8d
+ 1641 06d5 05       		.uleb128 0x5
+ 1642 06d6 03       		.byte	0x3
+ 1643 06d7 00000000 		.4byte	y
+ 1644 06db 19       		.uleb128 0x19
+ 1645 06dc 7A00     		.ascii	"z\000"
+ 1646 06de 01       		.byte	0x1
+ 1647 06df 25       		.byte	0x25
+ 1648 06e0 8D000000 		.4byte	0x8d
+ 1649 06e4 05       		.uleb128 0x5
+ 1650 06e5 03       		.byte	0x3
+ 1651 06e6 00000000 		.4byte	z
+ 1652 06ea 19       		.uleb128 0x19
+ 1653 06eb 786700   		.ascii	"xg\000"
+ 1654 06ee 01       		.byte	0x1
+ 1655 06ef 26       		.byte	0x26
+ 1656 06f0 99000000 		.4byte	0x99
+ 1657 06f4 05       		.uleb128 0x5
+ 1658 06f5 03       		.byte	0x3
+ 1659 06f6 00000000 		.4byte	xg
+ 1660 06fa 19       		.uleb128 0x19
+ 1661 06fb 796700   		.ascii	"yg\000"
+ 1662 06fe 01       		.byte	0x1
+ 1663 06ff 26       		.byte	0x26
+ 1664 0700 99000000 		.4byte	0x99
+ 1665 0704 05       		.uleb128 0x5
+ 1666 0705 03       		.byte	0x3
+ 1667 0706 00000000 		.4byte	yg
+ 1668 070a 19       		.uleb128 0x19
+ 1669 070b 7A6700   		.ascii	"zg\000"
+ 1670 070e 01       		.byte	0x1
+ 1671 070f 26       		.byte	0x26
+ 1672 0710 99000000 		.4byte	0x99
+ 1673 0714 05       		.uleb128 0x5
+ 1674 0715 03       		.byte	0x3
+ 1675 0716 00000000 		.4byte	zg
+ 1676 071a 1A       		.uleb128 0x1a
+ 1677 071b A7000000 		.4byte	0xa7
+ 1678 071f 2A070000 		.4byte	0x72a
+ 1679 0723 1B       		.uleb128 0x1b
+ 1680 0724 B5000000 		.4byte	0xb5
+ 1681 0728 31       		.byte	0x31
+ 1682 0729 00       		.byte	0
+ 1683 072a 18       		.uleb128 0x18
+ 1684 072b 74020000 		.4byte	.LASF30
+ 1685 072f 01       		.byte	0x1
+ 1686 0730 27       		.byte	0x27
+ 1687 0731 1A070000 		.4byte	0x71a
+ 1688 0735 05       		.uleb128 0x5
+ 1689 0736 03       		.byte	0x3
+ 1690 0737 00000000 		.4byte	buffer
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 34
+
+
+ 1691 073b 1A       		.uleb128 0x1a
+ 1692 073c A7000000 		.4byte	0xa7
+ 1693 0740 4B070000 		.4byte	0x74b
+ 1694 0744 1B       		.uleb128 0x1b
+ 1695 0745 B5000000 		.4byte	0xb5
+ 1696 0749 05       		.byte	0x5
+ 1697 074a 00       		.byte	0
+ 1698 074b 19       		.uleb128 0x19
+ 1699 074c 72617700 		.ascii	"raw\000"
+ 1700 0750 01       		.byte	0x1
+ 1701 0751 28       		.byte	0x28
+ 1702 0752 3B070000 		.4byte	0x73b
+ 1703 0756 05       		.uleb128 0x5
+ 1704 0757 03       		.byte	0x3
+ 1705 0758 00000000 		.4byte	raw
+ 1706 075c 1C       		.uleb128 0x1c
+ 1707 075d 12000000 		.4byte	.LASF31
+ 1708 0761 12000000 		.4byte	.LASF31
+ 1709 0765 06       		.byte	0x6
+ 1710 0766 5E       		.byte	0x5e
+ 1711 0767 1C       		.uleb128 0x1c
+ 1712 0768 00000000 		.4byte	.LASF32
+ 1713 076c 00000000 		.4byte	.LASF32
+ 1714 0770 06       		.byte	0x6
+ 1715 0771 5C       		.byte	0x5c
+ 1716 0772 1C       		.uleb128 0x1c
+ 1717 0773 B8000000 		.4byte	.LASF33
+ 1718 0777 B8000000 		.4byte	.LASF33
+ 1719 077b 06       		.byte	0x6
+ 1720 077c 64       		.byte	0x64
+ 1721 077d 1C       		.uleb128 0x1c
+ 1722 077e CA010000 		.4byte	.LASF34
+ 1723 0782 CA010000 		.4byte	.LASF34
+ 1724 0786 06       		.byte	0x6
+ 1725 0787 62       		.byte	0x62
+ 1726 0788 1C       		.uleb128 0x1c
+ 1727 0789 A0010000 		.4byte	.LASF35
+ 1728 078d A0010000 		.4byte	.LASF35
+ 1729 0791 06       		.byte	0x6
+ 1730 0792 60       		.byte	0x60
+ 1731 0793 1C       		.uleb128 0x1c
+ 1732 0794 CB020000 		.4byte	.LASF36
+ 1733 0798 CB020000 		.4byte	.LASF36
+ 1734 079c 07       		.byte	0x7
+ 1735 079d 76       		.byte	0x76
+ 1736 079e 1C       		.uleb128 0x1c
+ 1737 079f 71000000 		.4byte	.LASF37
+ 1738 07a3 71000000 		.4byte	.LASF37
+ 1739 07a7 06       		.byte	0x6
+ 1740 07a8 4D       		.byte	0x4d
+ 1741 07a9 1C       		.uleb128 0x1c
+ 1742 07aa 81020000 		.4byte	.LASF38
+ 1743 07ae 81020000 		.4byte	.LASF38
+ 1744 07b2 08       		.byte	0x8
+ 1745 07b3 27       		.byte	0x27
+ 1746 07b4 1C       		.uleb128 0x1c
+ 1747 07b5 88010000 		.4byte	.LASF39
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 35
+
+
+ 1748 07b9 88010000 		.4byte	.LASF39
+ 1749 07bd 09       		.byte	0x9
+ 1750 07be 54       		.byte	0x54
+ 1751 07bf 1C       		.uleb128 0x1c
+ 1752 07c0 61020000 		.4byte	.LASF40
+ 1753 07c4 61020000 		.4byte	.LASF40
+ 1754 07c8 0A       		.byte	0xa
+ 1755 07c9 36       		.byte	0x36
+ 1756 07ca 1C       		.uleb128 0x1c
+ 1757 07cb B4020000 		.4byte	.LASF41
+ 1758 07cf B4020000 		.4byte	.LASF41
+ 1759 07d3 09       		.byte	0x9
+ 1760 07d4 8B       		.byte	0x8b
+ 1761 07d5 1C       		.uleb128 0x1c
+ 1762 07d6 A0000000 		.4byte	.LASF42
+ 1763 07da A0000000 		.4byte	.LASF42
+ 1764 07de 0A       		.byte	0xa
+ 1765 07df 3D       		.byte	0x3d
+ 1766 07e0 1C       		.uleb128 0x1c
+ 1767 07e1 C3020000 		.4byte	.LASF43
+ 1768 07e5 C3020000 		.4byte	.LASF43
+ 1769 07e9 0B       		.byte	0xb
+ 1770 07ea E7       		.byte	0xe7
+ 1771 07eb 1C       		.uleb128 0x1c
+ 1772 07ec DF010000 		.4byte	.LASF44
+ 1773 07f0 DF010000 		.4byte	.LASF44
+ 1774 07f4 0A       		.byte	0xa
+ 1775 07f5 3C       		.byte	0x3c
+ 1776 07f6 00       		.byte	0
+ 1777              		.section	.debug_abbrev,"",%progbits
+ 1778              	.Ldebug_abbrev0:
+ 1779 0000 01       		.uleb128 0x1
+ 1780 0001 11       		.uleb128 0x11
+ 1781 0002 01       		.byte	0x1
+ 1782 0003 25       		.uleb128 0x25
+ 1783 0004 0E       		.uleb128 0xe
+ 1784 0005 13       		.uleb128 0x13
+ 1785 0006 0B       		.uleb128 0xb
+ 1786 0007 03       		.uleb128 0x3
+ 1787 0008 0E       		.uleb128 0xe
+ 1788 0009 1B       		.uleb128 0x1b
+ 1789 000a 0E       		.uleb128 0xe
+ 1790 000b 55       		.uleb128 0x55
+ 1791 000c 17       		.uleb128 0x17
+ 1792 000d 11       		.uleb128 0x11
+ 1793 000e 01       		.uleb128 0x1
+ 1794 000f 10       		.uleb128 0x10
+ 1795 0010 17       		.uleb128 0x17
+ 1796 0011 00       		.byte	0
+ 1797 0012 00       		.byte	0
+ 1798 0013 02       		.uleb128 0x2
+ 1799 0014 24       		.uleb128 0x24
+ 1800 0015 00       		.byte	0
+ 1801 0016 0B       		.uleb128 0xb
+ 1802 0017 0B       		.uleb128 0xb
+ 1803 0018 3E       		.uleb128 0x3e
+ 1804 0019 0B       		.uleb128 0xb
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 36
+
+
+ 1805 001a 03       		.uleb128 0x3
+ 1806 001b 0E       		.uleb128 0xe
+ 1807 001c 00       		.byte	0
+ 1808 001d 00       		.byte	0
+ 1809 001e 03       		.uleb128 0x3
+ 1810 001f 16       		.uleb128 0x16
+ 1811 0020 00       		.byte	0
+ 1812 0021 03       		.uleb128 0x3
+ 1813 0022 0E       		.uleb128 0xe
+ 1814 0023 3A       		.uleb128 0x3a
+ 1815 0024 0B       		.uleb128 0xb
+ 1816 0025 3B       		.uleb128 0x3b
+ 1817 0026 0B       		.uleb128 0xb
+ 1818 0027 49       		.uleb128 0x49
+ 1819 0028 13       		.uleb128 0x13
+ 1820 0029 00       		.byte	0
+ 1821 002a 00       		.byte	0
+ 1822 002b 04       		.uleb128 0x4
+ 1823 002c 24       		.uleb128 0x24
+ 1824 002d 00       		.byte	0
+ 1825 002e 0B       		.uleb128 0xb
+ 1826 002f 0B       		.uleb128 0xb
+ 1827 0030 3E       		.uleb128 0x3e
+ 1828 0031 0B       		.uleb128 0xb
+ 1829 0032 03       		.uleb128 0x3
+ 1830 0033 08       		.uleb128 0x8
+ 1831 0034 00       		.byte	0
+ 1832 0035 00       		.byte	0
+ 1833 0036 05       		.uleb128 0x5
+ 1834 0037 16       		.uleb128 0x16
+ 1835 0038 00       		.byte	0
+ 1836 0039 03       		.uleb128 0x3
+ 1837 003a 0E       		.uleb128 0xe
+ 1838 003b 3A       		.uleb128 0x3a
+ 1839 003c 0B       		.uleb128 0xb
+ 1840 003d 3B       		.uleb128 0x3b
+ 1841 003e 05       		.uleb128 0x5
+ 1842 003f 49       		.uleb128 0x49
+ 1843 0040 13       		.uleb128 0x13
+ 1844 0041 00       		.byte	0
+ 1845 0042 00       		.byte	0
+ 1846 0043 06       		.uleb128 0x6
+ 1847 0044 2E       		.uleb128 0x2e
+ 1848 0045 01       		.byte	0x1
+ 1849 0046 3F       		.uleb128 0x3f
+ 1850 0047 19       		.uleb128 0x19
+ 1851 0048 03       		.uleb128 0x3
+ 1852 0049 0E       		.uleb128 0xe
+ 1853 004a 3A       		.uleb128 0x3a
+ 1854 004b 0B       		.uleb128 0xb
+ 1855 004c 3B       		.uleb128 0x3b
+ 1856 004d 0B       		.uleb128 0xb
+ 1857 004e 27       		.uleb128 0x27
+ 1858 004f 19       		.uleb128 0x19
+ 1859 0050 11       		.uleb128 0x11
+ 1860 0051 01       		.uleb128 0x1
+ 1861 0052 12       		.uleb128 0x12
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 37
+
+
+ 1862 0053 06       		.uleb128 0x6
+ 1863 0054 40       		.uleb128 0x40
+ 1864 0055 18       		.uleb128 0x18
+ 1865 0056 9742     		.uleb128 0x2117
+ 1866 0058 19       		.uleb128 0x19
+ 1867 0059 01       		.uleb128 0x1
+ 1868 005a 13       		.uleb128 0x13
+ 1869 005b 00       		.byte	0
+ 1870 005c 00       		.byte	0
+ 1871 005d 07       		.uleb128 0x7
+ 1872 005e 05       		.uleb128 0x5
+ 1873 005f 00       		.byte	0
+ 1874 0060 03       		.uleb128 0x3
+ 1875 0061 08       		.uleb128 0x8
+ 1876 0062 3A       		.uleb128 0x3a
+ 1877 0063 0B       		.uleb128 0xb
+ 1878 0064 3B       		.uleb128 0x3b
+ 1879 0065 0B       		.uleb128 0xb
+ 1880 0066 49       		.uleb128 0x49
+ 1881 0067 13       		.uleb128 0x13
+ 1882 0068 02       		.uleb128 0x2
+ 1883 0069 17       		.uleb128 0x17
+ 1884 006a 00       		.byte	0
+ 1885 006b 00       		.byte	0
+ 1886 006c 08       		.uleb128 0x8
+ 1887 006d 05       		.uleb128 0x5
+ 1888 006e 00       		.byte	0
+ 1889 006f 03       		.uleb128 0x3
+ 1890 0070 0E       		.uleb128 0xe
+ 1891 0071 3A       		.uleb128 0x3a
+ 1892 0072 0B       		.uleb128 0xb
+ 1893 0073 3B       		.uleb128 0x3b
+ 1894 0074 0B       		.uleb128 0xb
+ 1895 0075 49       		.uleb128 0x49
+ 1896 0076 13       		.uleb128 0x13
+ 1897 0077 02       		.uleb128 0x2
+ 1898 0078 17       		.uleb128 0x17
+ 1899 0079 00       		.byte	0
+ 1900 007a 00       		.byte	0
+ 1901 007b 09       		.uleb128 0x9
+ 1902 007c 34       		.uleb128 0x34
+ 1903 007d 00       		.byte	0
+ 1904 007e 03       		.uleb128 0x3
+ 1905 007f 0E       		.uleb128 0xe
+ 1906 0080 3A       		.uleb128 0x3a
+ 1907 0081 0B       		.uleb128 0xb
+ 1908 0082 3B       		.uleb128 0x3b
+ 1909 0083 0B       		.uleb128 0xb
+ 1910 0084 49       		.uleb128 0x49
+ 1911 0085 13       		.uleb128 0x13
+ 1912 0086 02       		.uleb128 0x2
+ 1913 0087 17       		.uleb128 0x17
+ 1914 0088 00       		.byte	0
+ 1915 0089 00       		.byte	0
+ 1916 008a 0A       		.uleb128 0xa
+ 1917 008b 898201   		.uleb128 0x4109
+ 1918 008e 00       		.byte	0
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 38
+
+
+ 1919 008f 11       		.uleb128 0x11
+ 1920 0090 01       		.uleb128 0x1
+ 1921 0091 31       		.uleb128 0x31
+ 1922 0092 13       		.uleb128 0x13
+ 1923 0093 00       		.byte	0
+ 1924 0094 00       		.byte	0
+ 1925 0095 0B       		.uleb128 0xb
+ 1926 0096 898201   		.uleb128 0x4109
+ 1927 0099 01       		.byte	0x1
+ 1928 009a 11       		.uleb128 0x11
+ 1929 009b 01       		.uleb128 0x1
+ 1930 009c 31       		.uleb128 0x31
+ 1931 009d 13       		.uleb128 0x13
+ 1932 009e 01       		.uleb128 0x1
+ 1933 009f 13       		.uleb128 0x13
+ 1934 00a0 00       		.byte	0
+ 1935 00a1 00       		.byte	0
+ 1936 00a2 0C       		.uleb128 0xc
+ 1937 00a3 8A8201   		.uleb128 0x410a
+ 1938 00a6 00       		.byte	0
+ 1939 00a7 02       		.uleb128 0x2
+ 1940 00a8 18       		.uleb128 0x18
+ 1941 00a9 9142     		.uleb128 0x2111
+ 1942 00ab 18       		.uleb128 0x18
+ 1943 00ac 00       		.byte	0
+ 1944 00ad 00       		.byte	0
+ 1945 00ae 0D       		.uleb128 0xd
+ 1946 00af 2E       		.uleb128 0x2e
+ 1947 00b0 01       		.byte	0x1
+ 1948 00b1 3F       		.uleb128 0x3f
+ 1949 00b2 19       		.uleb128 0x19
+ 1950 00b3 03       		.uleb128 0x3
+ 1951 00b4 0E       		.uleb128 0xe
+ 1952 00b5 3A       		.uleb128 0x3a
+ 1953 00b6 0B       		.uleb128 0xb
+ 1954 00b7 3B       		.uleb128 0x3b
+ 1955 00b8 0B       		.uleb128 0xb
+ 1956 00b9 27       		.uleb128 0x27
+ 1957 00ba 19       		.uleb128 0x19
+ 1958 00bb 49       		.uleb128 0x49
+ 1959 00bc 13       		.uleb128 0x13
+ 1960 00bd 11       		.uleb128 0x11
+ 1961 00be 01       		.uleb128 0x1
+ 1962 00bf 12       		.uleb128 0x12
+ 1963 00c0 06       		.uleb128 0x6
+ 1964 00c1 40       		.uleb128 0x40
+ 1965 00c2 18       		.uleb128 0x18
+ 1966 00c3 9742     		.uleb128 0x2117
+ 1967 00c5 19       		.uleb128 0x19
+ 1968 00c6 01       		.uleb128 0x1
+ 1969 00c7 13       		.uleb128 0x13
+ 1970 00c8 00       		.byte	0
+ 1971 00c9 00       		.byte	0
+ 1972 00ca 0E       		.uleb128 0xe
+ 1973 00cb 34       		.uleb128 0x34
+ 1974 00cc 00       		.byte	0
+ 1975 00cd 03       		.uleb128 0x3
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 39
+
+
+ 1976 00ce 0E       		.uleb128 0xe
+ 1977 00cf 3A       		.uleb128 0x3a
+ 1978 00d0 0B       		.uleb128 0xb
+ 1979 00d1 3B       		.uleb128 0x3b
+ 1980 00d2 0B       		.uleb128 0xb
+ 1981 00d3 49       		.uleb128 0x49
+ 1982 00d4 13       		.uleb128 0x13
+ 1983 00d5 02       		.uleb128 0x2
+ 1984 00d6 18       		.uleb128 0x18
+ 1985 00d7 00       		.byte	0
+ 1986 00d8 00       		.byte	0
+ 1987 00d9 0F       		.uleb128 0xf
+ 1988 00da 898201   		.uleb128 0x4109
+ 1989 00dd 01       		.byte	0x1
+ 1990 00de 11       		.uleb128 0x11
+ 1991 00df 01       		.uleb128 0x1
+ 1992 00e0 31       		.uleb128 0x31
+ 1993 00e1 13       		.uleb128 0x13
+ 1994 00e2 00       		.byte	0
+ 1995 00e3 00       		.byte	0
+ 1996 00e4 10       		.uleb128 0x10
+ 1997 00e5 2E       		.uleb128 0x2e
+ 1998 00e6 01       		.byte	0x1
+ 1999 00e7 3F       		.uleb128 0x3f
+ 2000 00e8 19       		.uleb128 0x19
+ 2001 00e9 03       		.uleb128 0x3
+ 2002 00ea 0E       		.uleb128 0xe
+ 2003 00eb 3A       		.uleb128 0x3a
+ 2004 00ec 0B       		.uleb128 0xb
+ 2005 00ed 3B       		.uleb128 0x3b
+ 2006 00ee 0B       		.uleb128 0xb
+ 2007 00ef 27       		.uleb128 0x27
+ 2008 00f0 19       		.uleb128 0x19
+ 2009 00f1 11       		.uleb128 0x11
+ 2010 00f2 01       		.uleb128 0x1
+ 2011 00f3 12       		.uleb128 0x12
+ 2012 00f4 06       		.uleb128 0x6
+ 2013 00f5 40       		.uleb128 0x40
+ 2014 00f6 18       		.uleb128 0x18
+ 2015 00f7 9642     		.uleb128 0x2116
+ 2016 00f9 19       		.uleb128 0x19
+ 2017 00fa 01       		.uleb128 0x1
+ 2018 00fb 13       		.uleb128 0x13
+ 2019 00fc 00       		.byte	0
+ 2020 00fd 00       		.byte	0
+ 2021 00fe 11       		.uleb128 0x11
+ 2022 00ff 2E       		.uleb128 0x2e
+ 2023 0100 01       		.byte	0x1
+ 2024 0101 3F       		.uleb128 0x3f
+ 2025 0102 19       		.uleb128 0x19
+ 2026 0103 03       		.uleb128 0x3
+ 2027 0104 0E       		.uleb128 0xe
+ 2028 0105 3A       		.uleb128 0x3a
+ 2029 0106 0B       		.uleb128 0xb
+ 2030 0107 3B       		.uleb128 0x3b
+ 2031 0108 0B       		.uleb128 0xb
+ 2032 0109 11       		.uleb128 0x11
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 40
+
+
+ 2033 010a 01       		.uleb128 0x1
+ 2034 010b 12       		.uleb128 0x12
+ 2035 010c 06       		.uleb128 0x6
+ 2036 010d 40       		.uleb128 0x40
+ 2037 010e 18       		.uleb128 0x18
+ 2038 010f 9642     		.uleb128 0x2116
+ 2039 0111 19       		.uleb128 0x19
+ 2040 0112 01       		.uleb128 0x1
+ 2041 0113 13       		.uleb128 0x13
+ 2042 0114 00       		.byte	0
+ 2043 0115 00       		.byte	0
+ 2044 0116 12       		.uleb128 0x12
+ 2045 0117 34       		.uleb128 0x34
+ 2046 0118 00       		.byte	0
+ 2047 0119 03       		.uleb128 0x3
+ 2048 011a 0E       		.uleb128 0xe
+ 2049 011b 3A       		.uleb128 0x3a
+ 2050 011c 0B       		.uleb128 0xb
+ 2051 011d 3B       		.uleb128 0x3b
+ 2052 011e 0B       		.uleb128 0xb
+ 2053 011f 49       		.uleb128 0x49
+ 2054 0120 13       		.uleb128 0x13
+ 2055 0121 1C       		.uleb128 0x1c
+ 2056 0122 0D       		.uleb128 0xd
+ 2057 0123 00       		.byte	0
+ 2058 0124 00       		.byte	0
+ 2059 0125 13       		.uleb128 0x13
+ 2060 0126 0B       		.uleb128 0xb
+ 2061 0127 01       		.byte	0x1
+ 2062 0128 11       		.uleb128 0x11
+ 2063 0129 01       		.uleb128 0x1
+ 2064 012a 12       		.uleb128 0x12
+ 2065 012b 06       		.uleb128 0x6
+ 2066 012c 01       		.uleb128 0x1
+ 2067 012d 13       		.uleb128 0x13
+ 2068 012e 00       		.byte	0
+ 2069 012f 00       		.byte	0
+ 2070 0130 14       		.uleb128 0x14
+ 2071 0131 34       		.uleb128 0x34
+ 2072 0132 00       		.byte	0
+ 2073 0133 03       		.uleb128 0x3
+ 2074 0134 08       		.uleb128 0x8
+ 2075 0135 3A       		.uleb128 0x3a
+ 2076 0136 0B       		.uleb128 0xb
+ 2077 0137 3B       		.uleb128 0x3b
+ 2078 0138 0B       		.uleb128 0xb
+ 2079 0139 49       		.uleb128 0x49
+ 2080 013a 13       		.uleb128 0x13
+ 2081 013b 02       		.uleb128 0x2
+ 2082 013c 17       		.uleb128 0x17
+ 2083 013d 00       		.byte	0
+ 2084 013e 00       		.byte	0
+ 2085 013f 15       		.uleb128 0x15
+ 2086 0140 2E       		.uleb128 0x2e
+ 2087 0141 01       		.byte	0x1
+ 2088 0142 3F       		.uleb128 0x3f
+ 2089 0143 19       		.uleb128 0x19
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 41
+
+
+ 2090 0144 03       		.uleb128 0x3
+ 2091 0145 0E       		.uleb128 0xe
+ 2092 0146 3A       		.uleb128 0x3a
+ 2093 0147 0B       		.uleb128 0xb
+ 2094 0148 3B       		.uleb128 0x3b
+ 2095 0149 0B       		.uleb128 0xb
+ 2096 014a 49       		.uleb128 0x49
+ 2097 014b 13       		.uleb128 0x13
+ 2098 014c 8701     		.uleb128 0x87
+ 2099 014e 19       		.uleb128 0x19
+ 2100 014f 11       		.uleb128 0x11
+ 2101 0150 01       		.uleb128 0x1
+ 2102 0151 12       		.uleb128 0x12
+ 2103 0152 06       		.uleb128 0x6
+ 2104 0153 40       		.uleb128 0x40
+ 2105 0154 18       		.uleb128 0x18
+ 2106 0155 9642     		.uleb128 0x2116
+ 2107 0157 19       		.uleb128 0x19
+ 2108 0158 01       		.uleb128 0x1
+ 2109 0159 13       		.uleb128 0x13
+ 2110 015a 00       		.byte	0
+ 2111 015b 00       		.byte	0
+ 2112 015c 16       		.uleb128 0x16
+ 2113 015d 34       		.uleb128 0x34
+ 2114 015e 00       		.byte	0
+ 2115 015f 03       		.uleb128 0x3
+ 2116 0160 0E       		.uleb128 0xe
+ 2117 0161 3A       		.uleb128 0x3a
+ 2118 0162 0B       		.uleb128 0xb
+ 2119 0163 3B       		.uleb128 0x3b
+ 2120 0164 05       		.uleb128 0x5
+ 2121 0165 49       		.uleb128 0x49
+ 2122 0166 13       		.uleb128 0x13
+ 2123 0167 3F       		.uleb128 0x3f
+ 2124 0168 19       		.uleb128 0x19
+ 2125 0169 3C       		.uleb128 0x3c
+ 2126 016a 19       		.uleb128 0x19
+ 2127 016b 00       		.byte	0
+ 2128 016c 00       		.byte	0
+ 2129 016d 17       		.uleb128 0x17
+ 2130 016e 35       		.uleb128 0x35
+ 2131 016f 00       		.byte	0
+ 2132 0170 49       		.uleb128 0x49
+ 2133 0171 13       		.uleb128 0x13
+ 2134 0172 00       		.byte	0
+ 2135 0173 00       		.byte	0
+ 2136 0174 18       		.uleb128 0x18
+ 2137 0175 34       		.uleb128 0x34
+ 2138 0176 00       		.byte	0
+ 2139 0177 03       		.uleb128 0x3
+ 2140 0178 0E       		.uleb128 0xe
+ 2141 0179 3A       		.uleb128 0x3a
+ 2142 017a 0B       		.uleb128 0xb
+ 2143 017b 3B       		.uleb128 0x3b
+ 2144 017c 0B       		.uleb128 0xb
+ 2145 017d 49       		.uleb128 0x49
+ 2146 017e 13       		.uleb128 0x13
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 42
+
+
+ 2147 017f 3F       		.uleb128 0x3f
+ 2148 0180 19       		.uleb128 0x19
+ 2149 0181 02       		.uleb128 0x2
+ 2150 0182 18       		.uleb128 0x18
+ 2151 0183 00       		.byte	0
+ 2152 0184 00       		.byte	0
+ 2153 0185 19       		.uleb128 0x19
+ 2154 0186 34       		.uleb128 0x34
+ 2155 0187 00       		.byte	0
+ 2156 0188 03       		.uleb128 0x3
+ 2157 0189 08       		.uleb128 0x8
+ 2158 018a 3A       		.uleb128 0x3a
+ 2159 018b 0B       		.uleb128 0xb
+ 2160 018c 3B       		.uleb128 0x3b
+ 2161 018d 0B       		.uleb128 0xb
+ 2162 018e 49       		.uleb128 0x49
+ 2163 018f 13       		.uleb128 0x13
+ 2164 0190 3F       		.uleb128 0x3f
+ 2165 0191 19       		.uleb128 0x19
+ 2166 0192 02       		.uleb128 0x2
+ 2167 0193 18       		.uleb128 0x18
+ 2168 0194 00       		.byte	0
+ 2169 0195 00       		.byte	0
+ 2170 0196 1A       		.uleb128 0x1a
+ 2171 0197 01       		.uleb128 0x1
+ 2172 0198 01       		.byte	0x1
+ 2173 0199 49       		.uleb128 0x49
+ 2174 019a 13       		.uleb128 0x13
+ 2175 019b 01       		.uleb128 0x1
+ 2176 019c 13       		.uleb128 0x13
+ 2177 019d 00       		.byte	0
+ 2178 019e 00       		.byte	0
+ 2179 019f 1B       		.uleb128 0x1b
+ 2180 01a0 21       		.uleb128 0x21
+ 2181 01a1 00       		.byte	0
+ 2182 01a2 49       		.uleb128 0x49
+ 2183 01a3 13       		.uleb128 0x13
+ 2184 01a4 2F       		.uleb128 0x2f
+ 2185 01a5 0B       		.uleb128 0xb
+ 2186 01a6 00       		.byte	0
+ 2187 01a7 00       		.byte	0
+ 2188 01a8 1C       		.uleb128 0x1c
+ 2189 01a9 2E       		.uleb128 0x2e
+ 2190 01aa 00       		.byte	0
+ 2191 01ab 3F       		.uleb128 0x3f
+ 2192 01ac 19       		.uleb128 0x19
+ 2193 01ad 3C       		.uleb128 0x3c
+ 2194 01ae 19       		.uleb128 0x19
+ 2195 01af 6E       		.uleb128 0x6e
+ 2196 01b0 0E       		.uleb128 0xe
+ 2197 01b1 03       		.uleb128 0x3
+ 2198 01b2 0E       		.uleb128 0xe
+ 2199 01b3 3A       		.uleb128 0x3a
+ 2200 01b4 0B       		.uleb128 0xb
+ 2201 01b5 3B       		.uleb128 0x3b
+ 2202 01b6 0B       		.uleb128 0xb
+ 2203 01b7 00       		.byte	0
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 43
+
+
+ 2204 01b8 00       		.byte	0
+ 2205 01b9 00       		.byte	0
+ 2206              		.section	.debug_loc,"",%progbits
+ 2207              	.Ldebug_loc0:
+ 2208              	.LLST0:
+ 2209 0000 00000000 		.4byte	.LVL0
+ 2210 0004 07000000 		.4byte	.LVL2-1
+ 2211 0008 0100     		.2byte	0x1
+ 2212 000a 50       		.byte	0x50
+ 2213 000b 07000000 		.4byte	.LVL2-1
+ 2214 000f 1A000000 		.4byte	.LFE64
+ 2215 0013 0400     		.2byte	0x4
+ 2216 0015 F3       		.byte	0xf3
+ 2217 0016 01       		.uleb128 0x1
+ 2218 0017 50       		.byte	0x50
+ 2219 0018 9F       		.byte	0x9f
+ 2220 0019 00000000 		.4byte	0
+ 2221 001d 00000000 		.4byte	0
+ 2222              	.LLST1:
+ 2223 0021 00000000 		.4byte	.LVL0
+ 2224 0025 07000000 		.4byte	.LVL2-1
+ 2225 0029 0100     		.2byte	0x1
+ 2226 002b 51       		.byte	0x51
+ 2227 002c 07000000 		.4byte	.LVL2-1
+ 2228 0030 1A000000 		.4byte	.LFE64
+ 2229 0034 0400     		.2byte	0x4
+ 2230 0036 F3       		.byte	0xf3
+ 2231 0037 01       		.uleb128 0x1
+ 2232 0038 51       		.byte	0x51
+ 2233 0039 9F       		.byte	0x9f
+ 2234 003a 00000000 		.4byte	0
+ 2235 003e 00000000 		.4byte	0
+ 2236              	.LLST2:
+ 2237 0042 04000000 		.4byte	.LVL1
+ 2238 0046 07000000 		.4byte	.LVL2-1
+ 2239 004a 0100     		.2byte	0x1
+ 2240 004c 50       		.byte	0x50
+ 2241 004d 00000000 		.4byte	0
+ 2242 0051 00000000 		.4byte	0
+ 2243              	.LLST3:
+ 2244 0055 00000000 		.4byte	.LVL5
+ 2245 0059 09000000 		.4byte	.LVL7-1
+ 2246 005d 0100     		.2byte	0x1
+ 2247 005f 50       		.byte	0x50
+ 2248 0060 09000000 		.4byte	.LVL7-1
+ 2249 0064 3A000000 		.4byte	.LFE65
+ 2250 0068 0400     		.2byte	0x4
+ 2251 006a F3       		.byte	0xf3
+ 2252 006b 01       		.uleb128 0x1
+ 2253 006c 50       		.byte	0x50
+ 2254 006d 9F       		.byte	0x9f
+ 2255 006e 00000000 		.4byte	0
+ 2256 0072 00000000 		.4byte	0
+ 2257              	.LLST4:
+ 2258 0076 06000000 		.4byte	.LVL6
+ 2259 007a 32000000 		.4byte	.LVL14
+ 2260 007e 0100     		.2byte	0x1
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 44
+
+
+ 2261 0080 54       		.byte	0x54
+ 2262 0081 00000000 		.4byte	0
+ 2263 0085 00000000 		.4byte	0
+ 2264              	.LLST5:
+ 2265 0089 0C000000 		.4byte	.LVL38
+ 2266 008d 10000000 		.4byte	.LVL39
+ 2267 0091 0200     		.2byte	0x2
+ 2268 0093 30       		.byte	0x30
+ 2269 0094 9F       		.byte	0x9f
+ 2270 0095 10000000 		.4byte	.LVL39
+ 2271 0099 34000000 		.4byte	.LVL45
+ 2272 009d 0100     		.2byte	0x1
+ 2273 009f 54       		.byte	0x54
+ 2274 00a0 00000000 		.4byte	0
+ 2275 00a4 00000000 		.4byte	0
+ 2276              	.LLST6:
+ 2277 00a8 32000000 		.4byte	.LVL44
+ 2278 00ac 36000000 		.4byte	.LVL46
+ 2279 00b0 0200     		.2byte	0x2
+ 2280 00b2 30       		.byte	0x30
+ 2281 00b3 9F       		.byte	0x9f
+ 2282 00b4 36000000 		.4byte	.LVL46
+ 2283 00b8 64000000 		.4byte	.LVL49
+ 2284 00bc 0100     		.2byte	0x1
+ 2285 00be 54       		.byte	0x54
+ 2286 00bf 00000000 		.4byte	0
+ 2287 00c3 00000000 		.4byte	0
+ 2288              		.section	.debug_aranges,"",%progbits
+ 2289 0000 4C000000 		.4byte	0x4c
+ 2290 0004 0200     		.2byte	0x2
+ 2291 0006 00000000 		.4byte	.Ldebug_info0
+ 2292 000a 04       		.byte	0x4
+ 2293 000b 00       		.byte	0
+ 2294 000c 0000     		.2byte	0
+ 2295 000e 0000     		.2byte	0
+ 2296 0010 00000000 		.4byte	.LFB64
+ 2297 0014 1A000000 		.4byte	.LFE64-.LFB64
+ 2298 0018 00000000 		.4byte	.LFB65
+ 2299 001c 3A000000 		.4byte	.LFE65-.LFB65
+ 2300 0020 00000000 		.4byte	.LFB66
+ 2301 0024 28000000 		.4byte	.LFE66-.LFB66
+ 2302 0028 00000000 		.4byte	.LFB67
+ 2303 002c A8000000 		.4byte	.LFE67-.LFB67
+ 2304 0030 00000000 		.4byte	.LFB68
+ 2305 0034 D8000000 		.4byte	.LFE68-.LFB68
+ 2306 0038 00000000 		.4byte	.LFB69
+ 2307 003c 7C000000 		.4byte	.LFE69-.LFB69
+ 2308 0040 00000000 		.4byte	.LFB70
+ 2309 0044 24010000 		.4byte	.LFE70-.LFB70
+ 2310 0048 00000000 		.4byte	0
+ 2311 004c 00000000 		.4byte	0
+ 2312              		.section	.debug_ranges,"",%progbits
+ 2313              	.Ldebug_ranges0:
+ 2314 0000 00000000 		.4byte	.LFB64
+ 2315 0004 1A000000 		.4byte	.LFE64
+ 2316 0008 00000000 		.4byte	.LFB65
+ 2317 000c 3A000000 		.4byte	.LFE65
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 45
+
+
+ 2318 0010 00000000 		.4byte	.LFB66
+ 2319 0014 28000000 		.4byte	.LFE66
+ 2320 0018 00000000 		.4byte	.LFB67
+ 2321 001c A8000000 		.4byte	.LFE67
+ 2322 0020 00000000 		.4byte	.LFB68
+ 2323 0024 D8000000 		.4byte	.LFE68
+ 2324 0028 00000000 		.4byte	.LFB69
+ 2325 002c 7C000000 		.4byte	.LFE69
+ 2326 0030 00000000 		.4byte	.LFB70
+ 2327 0034 24010000 		.4byte	.LFE70
+ 2328 0038 00000000 		.4byte	0
+ 2329 003c 00000000 		.4byte	0
+ 2330              		.section	.debug_line,"",%progbits
+ 2331              	.Ldebug_line0:
+ 2332 0000 34030000 		.section	.debug_str,"MS",%progbits,1
+ 2332      0200F201 
+ 2332      00000201 
+ 2332      FB0E0D00 
+ 2332      01010101 
+ 2333              	.LASF32:
+ 2334 0000 5350494D 		.ascii	"SPIM_ReadTxStatus\000"
+ 2334      5F526561 
+ 2334      64547853 
+ 2334      74617475 
+ 2334      7300
+ 2335              	.LASF31:
+ 2336 0012 5350494D 		.ascii	"SPIM_WriteTxData\000"
+ 2336      5F577269 
+ 2336      74655478 
+ 2336      44617461 
+ 2336      00
+ 2337              	.LASF9:
+ 2338 0023 5F5F696E 		.ascii	"__int32_t\000"
+ 2338      7433325F 
+ 2338      7400
+ 2339              	.LASF47:
+ 2340 002d 433A5C55 		.ascii	"C:\\Users\\oleksandr\\Desktop\\PAZ\\ADXL345_SPI.cyd"
+ 2340      73657273 
+ 2340      5C6F6C65 
+ 2340      6B73616E 
+ 2340      64725C44 
+ 2341 005b 736E00   		.ascii	"sn\000"
+ 2342              	.LASF3:
+ 2343 005e 73686F72 		.ascii	"short unsigned int\000"
+ 2343      7420756E 
+ 2343      7369676E 
+ 2343      65642069 
+ 2343      6E7400
+ 2344              	.LASF37:
+ 2345 0071 5350494D 		.ascii	"SPIM_Start\000"
+ 2345      5F537461 
+ 2345      727400
+ 2346              	.LASF21:
+ 2347 007c 4144584C 		.ascii	"ADXL345_Init\000"
+ 2347      3334355F 
+ 2347      496E6974 
+ 2347      00
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 46
+
+
+ 2348              	.LASF20:
+ 2349 0089 57726974 		.ascii	"Write_SPI\000"
+ 2349      655F5350 
+ 2349      4900
+ 2350              	.LASF10:
+ 2351 0093 696E7433 		.ascii	"int32_t\000"
+ 2351      325F7400 
+ 2352              	.LASF19:
+ 2353 009b 61646472 		.ascii	"addr\000"
+ 2353      00
+ 2354              	.LASF42:
+ 2355 00a0 4C43445F 		.ascii	"LCD_Position\000"
+ 2355      506F7369 
+ 2355      74696F6E 
+ 2355      00
+ 2356              	.LASF13:
+ 2357 00ad 666C6F61 		.ascii	"float\000"
+ 2357      7400
+ 2358              	.LASF18:
+ 2359 00b3 64617461 		.ascii	"data\000"
+ 2359      00
+ 2360              	.LASF33:
+ 2361 00b8 5350494D 		.ascii	"SPIM_ClearRxBuffer\000"
+ 2361      5F436C65 
+ 2361      61725278 
+ 2361      42756666 
+ 2361      657200
+ 2362              	.LASF1:
+ 2363 00cb 756E7369 		.ascii	"unsigned char\000"
+ 2363      676E6564 
+ 2363      20636861 
+ 2363      7200
+ 2364              	.LASF45:
+ 2365 00d9 474E5520 		.ascii	"GNU C11 5.4.1 20160609 (release) [ARM/embedded-5-br"
+ 2365      43313120 
+ 2365      352E342E 
+ 2365      31203230 
+ 2365      31363036 
+ 2366 010c 616E6368 		.ascii	"anch revision 237715] -mcpu=cortex-m3 -mthumb -g -O"
+ 2366      20726576 
+ 2366      6973696F 
+ 2366      6E203233 
+ 2366      37373135 
+ 2367 013f 67202D66 		.ascii	"g -ffunction-sections -ffat-lto-objects\000"
+ 2367      66756E63 
+ 2367      74696F6E 
+ 2367      2D736563 
+ 2367      74696F6E 
+ 2368              	.LASF48:
+ 2369 0167 52656164 		.ascii	"Read_XYZ\000"
+ 2369      5F58595A 
+ 2369      00
+ 2370              	.LASF12:
+ 2371 0170 696E7431 		.ascii	"int16\000"
+ 2371      3600
+ 2372              	.LASF5:
+ 2373 0176 6C6F6E67 		.ascii	"long unsigned int\000"
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 47
+
+
+ 2373      20756E73 
+ 2373      69676E65 
+ 2373      6420696E 
+ 2373      7400
+ 2374              	.LASF39:
+ 2375 0188 55415254 		.ascii	"UART_Start\000"
+ 2375      5F537461 
+ 2375      727400
+ 2376              	.LASF26:
+ 2377 0193 49544D5F 		.ascii	"ITM_RxBuffer\000"
+ 2377      52784275 
+ 2377      66666572 
+ 2377      00
+ 2378              	.LASF35:
+ 2379 01a0 5350494D 		.ascii	"SPIM_ReadRxData\000"
+ 2379      5F526561 
+ 2379      64527844 
+ 2379      61746100 
+ 2380              	.LASF14:
+ 2381 01b0 646F7562 		.ascii	"double\000"
+ 2381      6C6500
+ 2382              	.LASF23:
+ 2383 01b7 4F666673 		.ascii	"Offset_Calibration\000"
+ 2383      65745F43 
+ 2383      616C6962 
+ 2383      72617469 
+ 2383      6F6E00
+ 2384              	.LASF34:
+ 2385 01ca 5350494D 		.ascii	"SPIM_GetRxBufferSize\000"
+ 2385      5F476574 
+ 2385      52784275 
+ 2385      66666572 
+ 2385      53697A65 
+ 2386              	.LASF44:
+ 2387 01df 4C43445F 		.ascii	"LCD_PrintString\000"
+ 2387      5072696E 
+ 2387      74537472 
+ 2387      696E6700 
+ 2388              	.LASF25:
+ 2389 01ef 6D61696E 		.ascii	"main\000"
+ 2389      00
+ 2390              	.LASF8:
+ 2391 01f4 756E7369 		.ascii	"unsigned int\000"
+ 2391      676E6564 
+ 2391      20696E74 
+ 2391      00
+ 2392              	.LASF7:
+ 2393 0201 6C6F6E67 		.ascii	"long long unsigned int\000"
+ 2393      206C6F6E 
+ 2393      6720756E 
+ 2393      7369676E 
+ 2393      65642069 
+ 2394              	.LASF16:
+ 2395 0218 6C6F6E67 		.ascii	"long double\000"
+ 2395      20646F75 
+ 2395      626C6500 
+ 2396              	.LASF17:
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 48
+
+
+ 2397 0224 73697A65 		.ascii	"sizetype\000"
+ 2397      74797065 
+ 2397      00
+ 2398              	.LASF24:
+ 2399 022d 52656164 		.ascii	"Read_SPI\000"
+ 2399      5F535049 
+ 2399      00
+ 2400              	.LASF6:
+ 2401 0236 6C6F6E67 		.ascii	"long long int\000"
+ 2401      206C6F6E 
+ 2401      6720696E 
+ 2401      7400
+ 2402              	.LASF46:
+ 2403 0244 6D61696E 		.ascii	"main.c\000"
+ 2403      2E6300
+ 2404              	.LASF15:
+ 2405 024b 63686172 		.ascii	"char\000"
+ 2405      00
+ 2406              	.LASF22:
+ 2407 0250 4765745F 		.ascii	"Get_Accel_Values\000"
+ 2407      41636365 
+ 2407      6C5F5661 
+ 2407      6C756573 
+ 2407      00
+ 2408              	.LASF40:
+ 2409 0261 4C43445F 		.ascii	"LCD_Init\000"
+ 2409      496E6974 
+ 2409      00
+ 2410              	.LASF2:
+ 2411 026a 73686F72 		.ascii	"short int\000"
+ 2411      7420696E 
+ 2411      7400
+ 2412              	.LASF30:
+ 2413 0274 62756666 		.ascii	"buffer\000"
+ 2413      657200
+ 2414              	.LASF11:
+ 2415 027b 75696E74 		.ascii	"uint8\000"
+ 2415      3800
+ 2416              	.LASF38:
+ 2417 0281 436C6F63 		.ascii	"Clock_Start\000"
+ 2417      6B5F5374 
+ 2417      61727400 
+ 2418              	.LASF4:
+ 2419 028d 6C6F6E67 		.ascii	"long int\000"
+ 2419      20696E74 
+ 2419      00
+ 2420              	.LASF27:
+ 2421 0296 63616C5F 		.ascii	"cal_X\000"
+ 2421      5800
+ 2422              	.LASF28:
+ 2423 029c 63616C5F 		.ascii	"cal_Y\000"
+ 2423      5900
+ 2424              	.LASF29:
+ 2425 02a2 63616C5F 		.ascii	"cal_Z\000"
+ 2425      5A00
+ 2426              	.LASF0:
+ 2427 02a8 7369676E 		.ascii	"signed char\000"
+ARM GAS  C:\Users\OLEKSA~1\AppData\Local\Temp\ccF1LZNW.s 			page 49
+
+
+ 2427      65642063 
+ 2427      68617200 
+ 2428              	.LASF41:
+ 2429 02b4 55415254 		.ascii	"UART_PutString\000"
+ 2429      5F507574 
+ 2429      53747269 
+ 2429      6E6700
+ 2430              	.LASF43:
+ 2431 02c3 73707269 		.ascii	"sprintf\000"
+ 2431      6E746600 
+ 2432              	.LASF36:
+ 2433 02cb 43794465 		.ascii	"CyDelay\000"
+ 2433      6C617900 
+ 2434              		.ident	"GCC: (GNU Tools for ARM Embedded Processors) 5.4.1 20160609 (release) [ARM/embedded-5-bran
