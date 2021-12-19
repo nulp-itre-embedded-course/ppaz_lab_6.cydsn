@@ -1,0 +1,2759 @@
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 1
+
+
+   1              		.syntax unified
+   2              		.cpu cortex-m3
+   3              		.fpu softvfp
+   4              		.eabi_attribute 20, 1
+   5              		.eabi_attribute 21, 1
+   6              		.eabi_attribute 23, 3
+   7              		.eabi_attribute 24, 1
+   8              		.eabi_attribute 25, 1
+   9              		.eabi_attribute 26, 1
+  10              		.eabi_attribute 30, 1
+  11              		.eabi_attribute 34, 1
+  12              		.eabi_attribute 18, 4
+  13              		.thumb
+  14              		.syntax unified
+  15              		.file	"main.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.section	.text.Write_SPI,"ax",%progbits
+  20              		.align	2
+  21              		.global	Write_SPI
+  22              		.thumb
+  23              		.thumb_func
+  24              		.type	Write_SPI, %function
+  25              	Write_SPI:
+  26              	.LFB64:
+  27              		.file 1 "main.c"
+   1:main.c        **** /* ========================================
+   2:main.c        ****  *
+   3:main.c        ****  * Copyright YOUR COMPANY, THE YEAR
+   4:main.c        ****  * All Rights Reserved
+   5:main.c        ****  * UNPUBLISHED, LICENSED SOFTWARE.
+   6:main.c        ****  *
+   7:main.c        ****  * CONFIDENTIAL AND PROPRIETARY INFORMATION
+   8:main.c        ****  * WHICH IS THE PROPERTY OF your company.
+   9:main.c        ****  *
+  10:main.c        ****  * ========================================
+  11:main.c        **** */
+  12:main.c        **** #include "project.h"
+  13:main.c        **** #include <stdio.h>
+  14:main.c        **** 
+  15:main.c        **** // ADXL345 Register Definition
+  16:main.c        **** #define     RA_BW_RATE          0x2C    // R/W   0x0A   Data rate and power mode control
+  17:main.c        **** #define 	RA_DATA_FORMAT 	    0x31 	// R/W 	 0   	Data format control
+  18:main.c        **** #define 	RA_POWER_CTL 	    0x2D 	// R/W 	 0   	Power-saving features control
+  19:main.c        **** #define 	RA_DATAX0 	        0x32 	// R 	 0 	    X-Axis Data 0
+  20:main.c        **** #define 	RA_DATAX1 	        0x33 	// R 	 0 	    X-Axis Data 1
+  21:main.c        **** #define 	RA_DATAY0 	        0x34 	// R 	 0 	    Y-Axis Data 0
+  22:main.c        **** #define 	RA_DATAY1 	        0x35 	// R 	 0 	    Y-Axis Data 1
+  23:main.c        **** #define 	RA_DATAZ0 	        0x36 	// R 	 0 	    Z-Axis Data 0
+  24:main.c        **** #define 	RA_DATAZ1 	        0x37 	// R 	 0 	    Z-Axis Data 1
+  25:main.c        **** #define     RA_OFSX             0x1E    // R/W   0      X-axis offset
+  26:main.c        **** #define     RA_OFSY             0x1F    // R/W   0      Y-axis offset
+  27:main.c        **** #define     RA_OFSZ             0x20    // R/W   0      Z-axis offset
+  28:main.c        **** 
+  29:main.c        **** #define     SPI_READ            0x80
+  30:main.c        **** #define     SPI_WRITE           0x00
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 2
+
+
+  31:main.c        **** #define     SPI_MULTIPLE_BIT    0x40
+  32:main.c        **** #define     SPI_SINGLE_BIT      0x00
+  33:main.c        **** 
+  34:main.c        **** #define SCALE_FACTOR    3.9f 
+  35:main.c        **** 
+  36:main.c        **** float cal_X = 0, cal_Y = 0, cal_Z = 0; 
+  37:main.c        **** int16 x, y, z;
+  38:main.c        **** float xg, yg, zg;
+  39:main.c        **** char buffer[50]; 
+  40:main.c        **** char raw[6];    // raw data from regs: DATAX0, DATAX1, DATAY0, DATAY1, DATAZ0, DATAZ1
+  41:main.c        **** 
+  42:main.c        **** void Write_SPI(unsigned char reg, unsigned char data)       // write single byte via SPI
+  43:main.c        **** {
+  28              		.loc 1 43 0
+  29              		.cfi_startproc
+  30              		@ args = 0, pretend = 0, frame = 0
+  31              		@ frame_needed = 0, uses_anonymous_args = 0
+  32              	.LVL0:
+  33 0000 10B5     		push	{r4, lr}
+  34              		.cfi_def_cfa_offset 8
+  35              		.cfi_offset 4, -8
+  36              		.cfi_offset 14, -4
+  37 0002 0C46     		mov	r4, r1
+  38              	.LVL1:
+  44:main.c        ****     unsigned char addr = reg | SPI_WRITE;
+  45:main.c        **** 
+  46:main.c        ****     SPIM_WriteTxData(addr);
+  39              		.loc 1 46 0
+  40 0004 FFF7FEFF 		bl	SPIM_WriteTxData
+  41              	.LVL2:
+  47:main.c        ****     SPIM_WriteTxData(data);
+  42              		.loc 1 47 0
+  43 0008 2046     		mov	r0, r4
+  44 000a FFF7FEFF 		bl	SPIM_WriteTxData
+  45              	.LVL3:
+  46              	.L2:
+  48:main.c        ****     while((SPIM_ReadTxStatus() & SPIM_STS_SPI_DONE) != SPIM_STS_SPI_DONE);
+  47              		.loc 1 48 0 discriminator 1
+  48 000e FFF7FEFF 		bl	SPIM_ReadTxStatus
+  49              	.LVL4:
+  50 0012 10F0010F 		tst	r0, #1
+  51 0016 FAD0     		beq	.L2
+  49:main.c        **** }
+  52              		.loc 1 49 0
+  53 0018 10BD     		pop	{r4, pc}
+  54              		.cfi_endproc
+  55              	.LFE64:
+  56              		.size	Write_SPI, .-Write_SPI
+  57 001a 00BF     		.section	.text.Read_SPI,"ax",%progbits
+  58              		.align	2
+  59              		.global	Read_SPI
+  60              		.thumb
+  61              		.thumb_func
+  62              		.type	Read_SPI, %function
+  63              	Read_SPI:
+  64              	.LFB65:
+  50:main.c        **** 
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 3
+
+
+  51:main.c        **** unsigned char Read_SPI(unsigned char reg)                   // read single byte via SPI
+  52:main.c        **** {
+  65              		.loc 1 52 0
+  66              		.cfi_startproc
+  67              		@ args = 0, pretend = 0, frame = 0
+  68              		@ frame_needed = 0, uses_anonymous_args = 0
+  69              	.LVL5:
+  70 0000 10B5     		push	{r4, lr}
+  71              		.cfi_def_cfa_offset 8
+  72              		.cfi_offset 4, -8
+  73              		.cfi_offset 14, -4
+  53:main.c        ****     unsigned char data;
+  54:main.c        ****     unsigned char addr = reg | SPI_READ;
+  74              		.loc 1 54 0
+  75 0002 40F08004 		orr	r4, r0, #128
+  76              	.LVL6:
+  55:main.c        **** 
+  56:main.c        ****     SPIM_ClearRxBuffer();
+  77              		.loc 1 56 0
+  78 0006 FFF7FEFF 		bl	SPIM_ClearRxBuffer
+  79              	.LVL7:
+  57:main.c        ****     SPIM_WriteTxData(addr);
+  80              		.loc 1 57 0
+  81 000a 2046     		mov	r0, r4
+  82 000c FFF7FEFF 		bl	SPIM_WriteTxData
+  83              	.LVL8:
+  58:main.c        ****     SPIM_WriteTxData(0xFF);
+  84              		.loc 1 58 0
+  85 0010 FF20     		movs	r0, #255
+  86 0012 FFF7FEFF 		bl	SPIM_WriteTxData
+  87              	.LVL9:
+  88              	.L5:
+  59:main.c        ****     while((SPIM_ReadTxStatus() & SPIM_STS_SPI_DONE) != SPIM_STS_SPI_DONE);
+  89              		.loc 1 59 0 discriminator 1
+  90 0016 FFF7FEFF 		bl	SPIM_ReadTxStatus
+  91              	.LVL10:
+  92 001a 10F0010F 		tst	r0, #1
+  93 001e FAD0     		beq	.L5
+  94              	.L6:
+  60:main.c        ****     while(SPIM_GetRxBufferSize() < 2);
+  95              		.loc 1 60 0 discriminator 1
+  96 0020 FFF7FEFF 		bl	SPIM_GetRxBufferSize
+  97              	.LVL11:
+  98 0024 0128     		cmp	r0, #1
+  99 0026 FBD9     		bls	.L6
+  61:main.c        ****     SPIM_ReadRxData();
+ 100              		.loc 1 61 0
+ 101 0028 FFF7FEFF 		bl	SPIM_ReadRxData
+ 102              	.LVL12:
+  62:main.c        ****     data = SPIM_ReadRxData();
+ 103              		.loc 1 62 0
+ 104 002c FFF7FEFF 		bl	SPIM_ReadRxData
+ 105              	.LVL13:
+ 106 0030 0446     		mov	r4, r0
+ 107              	.LVL14:
+  63:main.c        ****     SPIM_ClearRxBuffer();
+ 108              		.loc 1 63 0
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 4
+
+
+ 109 0032 FFF7FEFF 		bl	SPIM_ClearRxBuffer
+ 110              	.LVL15:
+  64:main.c        **** 
+  65:main.c        ****     return data;
+  66:main.c        **** }
+ 111              		.loc 1 66 0
+ 112 0036 2046     		mov	r0, r4
+ 113 0038 10BD     		pop	{r4, pc}
+ 114              		.cfi_endproc
+ 115              	.LFE65:
+ 116              		.size	Read_SPI, .-Read_SPI
+ 117 003a 00BF     		.section	.text.ADXL345_Init,"ax",%progbits
+ 118              		.align	2
+ 119              		.global	ADXL345_Init
+ 120              		.thumb
+ 121              		.thumb_func
+ 122              		.type	ADXL345_Init, %function
+ 123              	ADXL345_Init:
+ 124              	.LFB66:
+  67:main.c        **** 
+  68:main.c        **** void ADXL345_Init(void)
+  69:main.c        **** {
+ 125              		.loc 1 69 0
+ 126              		.cfi_startproc
+ 127              		@ args = 0, pretend = 0, frame = 0
+ 128              		@ frame_needed = 0, uses_anonymous_args = 0
+ 129 0000 08B5     		push	{r3, lr}
+ 130              		.cfi_def_cfa_offset 8
+ 131              		.cfi_offset 3, -8
+ 132              		.cfi_offset 14, -4
+  70:main.c        ****     CyDelay(2u);
+ 133              		.loc 1 70 0
+ 134 0002 0220     		movs	r0, #2
+ 135 0004 FFF7FEFF 		bl	CyDelay
+ 136              	.LVL16:
+  71:main.c        ****     Write_SPI(RA_POWER_CTL, 0x08);     //  START MEASUREMENT
+ 137              		.loc 1 71 0
+ 138 0008 0821     		movs	r1, #8
+ 139 000a 2D20     		movs	r0, #45
+ 140 000c FFF7FEFF 		bl	Write_SPI
+ 141              	.LVL17:
+  72:main.c        ****     Write_SPI(RA_BW_RATE, 0x08);       //  25 Hz
+ 142              		.loc 1 72 0
+ 143 0010 0821     		movs	r1, #8
+ 144 0012 2C20     		movs	r0, #44
+ 145 0014 FFF7FEFF 		bl	Write_SPI
+ 146              	.LVL18:
+  73:main.c        ****     Write_SPI(RA_DATA_FORMAT, 0x0B);   //  +/-16g , 13-BIT MODE
+ 147              		.loc 1 73 0
+ 148 0018 0B21     		movs	r1, #11
+ 149 001a 3120     		movs	r0, #49
+ 150 001c FFF7FEFF 		bl	Write_SPI
+ 151              	.LVL19:
+  74:main.c        **** 
+  75:main.c        ****     CyDelay(2u);
+ 152              		.loc 1 75 0
+ 153 0020 0220     		movs	r0, #2
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 5
+
+
+ 154 0022 FFF7FEFF 		bl	CyDelay
+ 155              	.LVL20:
+ 156 0026 08BD     		pop	{r3, pc}
+ 157              		.cfi_endproc
+ 158              	.LFE66:
+ 159              		.size	ADXL345_Init, .-ADXL345_Init
+ 160              		.global	__aeabi_i2f
+ 161              		.global	__aeabi_fmul
+ 162              		.global	__aeabi_fdiv
+ 163              		.section	.text.Get_Accel_Values,"ax",%progbits
+ 164              		.align	2
+ 165              		.global	Get_Accel_Values
+ 166              		.thumb
+ 167              		.thumb_func
+ 168              		.type	Get_Accel_Values, %function
+ 169              	Get_Accel_Values:
+ 170              	.LFB67:
+  76:main.c        **** }
+  77:main.c        **** 
+  78:main.c        **** void Get_Accel_Values(void)
+  79:main.c        **** {
+ 171              		.loc 1 79 0
+ 172              		.cfi_startproc
+ 173              		@ args = 0, pretend = 0, frame = 0
+ 174              		@ frame_needed = 0, uses_anonymous_args = 0
+ 175 0000 70B5     		push	{r4, r5, r6, lr}
+ 176              		.cfi_def_cfa_offset 16
+ 177              		.cfi_offset 4, -16
+ 178              		.cfi_offset 5, -12
+ 179              		.cfi_offset 6, -8
+ 180              		.cfi_offset 14, -4
+  80:main.c        ****     x = ((Read_SPI(RA_DATAX1) << 8) | Read_SPI(RA_DATAX0)); 
+ 181              		.loc 1 80 0
+ 182 0002 3320     		movs	r0, #51
+ 183 0004 FFF7FEFF 		bl	Read_SPI
+ 184              	.LVL21:
+ 185 0008 0402     		lsls	r4, r0, #8
+ 186 000a 3220     		movs	r0, #50
+ 187 000c FFF7FEFF 		bl	Read_SPI
+ 188              	.LVL22:
+ 189 0010 1D4D     		ldr	r5, .L12
+ 190 0012 2043     		orrs	r0, r0, r4
+ 191 0014 2880     		strh	r0, [r5]	@ movhi
+  81:main.c        ****     y = ((Read_SPI(RA_DATAY1) << 8) | Read_SPI(RA_DATAY0)); 
+ 192              		.loc 1 81 0
+ 193 0016 3520     		movs	r0, #53
+ 194 0018 FFF7FEFF 		bl	Read_SPI
+ 195              	.LVL23:
+ 196 001c 0402     		lsls	r4, r0, #8
+ 197 001e 3420     		movs	r0, #52
+ 198 0020 FFF7FEFF 		bl	Read_SPI
+ 199              	.LVL24:
+ 200 0024 194E     		ldr	r6, .L12+4
+ 201 0026 2043     		orrs	r0, r0, r4
+ 202 0028 3080     		strh	r0, [r6]	@ movhi
+  82:main.c        ****     z = ((Read_SPI(RA_DATAZ1) << 8) | Read_SPI(RA_DATAZ0)); 
+ 203              		.loc 1 82 0
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 6
+
+
+ 204 002a 3720     		movs	r0, #55
+ 205 002c FFF7FEFF 		bl	Read_SPI
+ 206              	.LVL25:
+ 207 0030 0402     		lsls	r4, r0, #8
+ 208 0032 3620     		movs	r0, #54
+ 209 0034 FFF7FEFF 		bl	Read_SPI
+ 210              	.LVL26:
+ 211 0038 2043     		orrs	r0, r0, r4
+ 212 003a 04B2     		sxth	r4, r0
+ 213 003c 144B     		ldr	r3, .L12+8
+ 214 003e 1C80     		strh	r4, [r3]	@ movhi
+  83:main.c        ****     
+  84:main.c        ****     xg = SCALE_FACTOR * (float)x / 1000.0;
+ 215              		.loc 1 84 0
+ 216 0040 B5F90000 		ldrsh	r0, [r5]
+ 217 0044 FFF7FEFF 		bl	__aeabi_i2f
+ 218              	.LVL27:
+ 219 0048 1249     		ldr	r1, .L12+12
+ 220 004a FFF7FEFF 		bl	__aeabi_fmul
+ 221              	.LVL28:
+ 222 004e 1249     		ldr	r1, .L12+16
+ 223 0050 FFF7FEFF 		bl	__aeabi_fdiv
+ 224              	.LVL29:
+ 225 0054 114B     		ldr	r3, .L12+20
+ 226 0056 1860     		str	r0, [r3]	@ float
+  85:main.c        ****     yg = SCALE_FACTOR * (float)y / 1000.0;
+ 227              		.loc 1 85 0
+ 228 0058 B6F90000 		ldrsh	r0, [r6]
+ 229 005c FFF7FEFF 		bl	__aeabi_i2f
+ 230              	.LVL30:
+ 231 0060 0C49     		ldr	r1, .L12+12
+ 232 0062 FFF7FEFF 		bl	__aeabi_fmul
+ 233              	.LVL31:
+ 234 0066 0C49     		ldr	r1, .L12+16
+ 235 0068 FFF7FEFF 		bl	__aeabi_fdiv
+ 236              	.LVL32:
+ 237 006c 0C4B     		ldr	r3, .L12+24
+ 238 006e 1860     		str	r0, [r3]	@ float
+  86:main.c        ****     zg = SCALE_FACTOR * (float)z / 1000.0;   
+ 239              		.loc 1 86 0
+ 240 0070 2046     		mov	r0, r4
+ 241 0072 FFF7FEFF 		bl	__aeabi_i2f
+ 242              	.LVL33:
+ 243 0076 0749     		ldr	r1, .L12+12
+ 244 0078 FFF7FEFF 		bl	__aeabi_fmul
+ 245              	.LVL34:
+ 246 007c 0649     		ldr	r1, .L12+16
+ 247 007e FFF7FEFF 		bl	__aeabi_fdiv
+ 248              	.LVL35:
+ 249 0082 084B     		ldr	r3, .L12+28
+ 250 0084 1860     		str	r0, [r3]	@ float
+ 251 0086 70BD     		pop	{r4, r5, r6, pc}
+ 252              	.L13:
+ 253              		.align	2
+ 254              	.L12:
+ 255 0088 00000000 		.word	x
+ 256 008c 00000000 		.word	y
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 7
+
+
+ 257 0090 00000000 		.word	z
+ 258 0094 9A997940 		.word	1081711002
+ 259 0098 00007A44 		.word	1148846080
+ 260 009c 00000000 		.word	xg
+ 261 00a0 00000000 		.word	yg
+ 262 00a4 00000000 		.word	zg
+ 263              		.cfi_endproc
+ 264              	.LFE67:
+ 265              		.size	Get_Accel_Values, .-Get_Accel_Values
+ 266              		.section	.text.Read_XYZ,"ax",%progbits
+ 267              		.align	2
+ 268              		.global	Read_XYZ
+ 269              		.thumb
+ 270              		.thumb_func
+ 271              		.type	Read_XYZ, %function
+ 272              	Read_XYZ:
+ 273              	.LFB68:
+  87:main.c        **** }
+  88:main.c        **** 
+  89:main.c        **** void Read_XYZ()     // read acceleration values in one session
+  90:main.c        **** {
+ 274              		.loc 1 90 0
+ 275              		.cfi_startproc
+ 276              		@ args = 0, pretend = 0, frame = 0
+ 277              		@ frame_needed = 0, uses_anonymous_args = 0
+ 278 0000 38B5     		push	{r3, r4, r5, lr}
+ 279              		.cfi_def_cfa_offset 16
+ 280              		.cfi_offset 3, -16
+ 281              		.cfi_offset 4, -12
+ 282              		.cfi_offset 5, -8
+ 283              		.cfi_offset 14, -4
+ 284              	.LVL36:
+  91:main.c        ****     unsigned char addr = RA_DATAX0 | SPI_READ | SPI_MULTIPLE_BIT;
+  92:main.c        ****     
+  93:main.c        ****     SPIM_ClearRxBuffer();
+ 285              		.loc 1 93 0
+ 286 0002 FFF7FEFF 		bl	SPIM_ClearRxBuffer
+ 287              	.LVL37:
+  94:main.c        ****     SPIM_WriteTxData(addr);
+ 288              		.loc 1 94 0
+ 289 0006 F220     		movs	r0, #242
+ 290 0008 FFF7FEFF 		bl	SPIM_WriteTxData
+ 291              	.LVL38:
+ 292              	.LBB2:
+  95:main.c        ****     for (int i = 0; i < 6; i++)
+ 293              		.loc 1 95 0
+ 294 000c 0024     		movs	r4, #0
+ 295 000e 03E0     		b	.L15
+ 296              	.LVL39:
+ 297              	.L16:
+  96:main.c        ****         SPIM_WriteTxData(0x00);
+ 298              		.loc 1 96 0 discriminator 3
+ 299 0010 0020     		movs	r0, #0
+ 300 0012 FFF7FEFF 		bl	SPIM_WriteTxData
+ 301              	.LVL40:
+  95:main.c        ****     for (int i = 0; i < 6; i++)
+ 302              		.loc 1 95 0 discriminator 3
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 8
+
+
+ 303 0016 0134     		adds	r4, r4, #1
+ 304              	.LVL41:
+ 305              	.L15:
+  95:main.c        ****     for (int i = 0; i < 6; i++)
+ 306              		.loc 1 95 0 is_stmt 0 discriminator 1
+ 307 0018 052C     		cmp	r4, #5
+ 308 001a F9DD     		ble	.L16
+ 309              	.L17:
+ 310              	.LBE2:
+  97:main.c        **** 
+  98:main.c        ****     while((SPIM_ReadTxStatus() & SPIM_STS_SPI_DONE) != SPIM_STS_SPI_DONE);
+ 311              		.loc 1 98 0 is_stmt 1 discriminator 1
+ 312 001c FFF7FEFF 		bl	SPIM_ReadTxStatus
+ 313              	.LVL42:
+ 314 0020 10F0010F 		tst	r0, #1
+ 315 0024 FAD0     		beq	.L17
+ 316              	.L18:
+  99:main.c        ****     while(SPIM_GetRxBufferSize() < 7);
+ 317              		.loc 1 99 0 discriminator 1
+ 318 0026 FFF7FEFF 		bl	SPIM_GetRxBufferSize
+ 319              	.LVL43:
+ 320 002a 0628     		cmp	r0, #6
+ 321 002c FBD9     		bls	.L18
+ 100:main.c        ****     SPIM_ReadRxData();
+ 322              		.loc 1 100 0
+ 323 002e FFF7FEFF 		bl	SPIM_ReadRxData
+ 324              	.LVL44:
+ 325              	.LBB3:
+ 101:main.c        ****     
+ 102:main.c        ****     for (int i = 0; i < 6; i++)
+ 326              		.loc 1 102 0
+ 327 0032 0024     		movs	r4, #0
+ 328              	.LVL45:
+ 329 0034 04E0     		b	.L19
+ 330              	.LVL46:
+ 331              	.L20:
+ 103:main.c        ****         raw[i] = SPIM_ReadRxData();
+ 332              		.loc 1 103 0 discriminator 3
+ 333 0036 FFF7FEFF 		bl	SPIM_ReadRxData
+ 334              	.LVL47:
+ 335 003a 1E4B     		ldr	r3, .L22
+ 336 003c 1855     		strb	r0, [r3, r4]
+ 102:main.c        ****         raw[i] = SPIM_ReadRxData();
+ 337              		.loc 1 102 0 discriminator 3
+ 338 003e 0134     		adds	r4, r4, #1
+ 339              	.LVL48:
+ 340              	.L19:
+ 102:main.c        ****         raw[i] = SPIM_ReadRxData();
+ 341              		.loc 1 102 0 is_stmt 0 discriminator 1
+ 342 0040 052C     		cmp	r4, #5
+ 343 0042 F8DD     		ble	.L20
+ 344              	.LBE3:
+ 104:main.c        ****     
+ 105:main.c        ****     x = (raw[1] << 8) | raw[0]; 
+ 345              		.loc 1 105 0 is_stmt 1
+ 346 0044 1B4A     		ldr	r2, .L22
+ 347 0046 5078     		ldrb	r0, [r2, #1]	@ zero_extendqisi2
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 9
+
+
+ 348 0048 1378     		ldrb	r3, [r2]	@ zero_extendqisi2
+ 349 004a 43EA0020 		orr	r0, r3, r0, lsl #8
+ 350 004e 00B2     		sxth	r0, r0
+ 351 0050 194B     		ldr	r3, .L22+4
+ 352 0052 1880     		strh	r0, [r3]	@ movhi
+ 106:main.c        ****     y = (raw[3] << 8) | raw[2]; 
+ 353              		.loc 1 106 0
+ 354 0054 D578     		ldrb	r5, [r2, #3]	@ zero_extendqisi2
+ 355 0056 9378     		ldrb	r3, [r2, #2]	@ zero_extendqisi2
+ 356 0058 43EA0525 		orr	r5, r3, r5, lsl #8
+ 357 005c 2DB2     		sxth	r5, r5
+ 358 005e 174B     		ldr	r3, .L22+8
+ 359 0060 1D80     		strh	r5, [r3]	@ movhi
+ 107:main.c        ****     z = (raw[5] << 8) | raw[4]; 
+ 360              		.loc 1 107 0
+ 361 0062 5479     		ldrb	r4, [r2, #5]	@ zero_extendqisi2
+ 362              	.LVL49:
+ 363 0064 1379     		ldrb	r3, [r2, #4]	@ zero_extendqisi2
+ 364 0066 43EA0424 		orr	r4, r3, r4, lsl #8
+ 365 006a 24B2     		sxth	r4, r4
+ 366 006c 144B     		ldr	r3, .L22+12
+ 367 006e 1C80     		strh	r4, [r3]	@ movhi
+ 108:main.c        ****     
+ 109:main.c        ****     xg = SCALE_FACTOR * (float)x / 1000.0;
+ 368              		.loc 1 109 0
+ 369 0070 FFF7FEFF 		bl	__aeabi_i2f
+ 370              	.LVL50:
+ 371 0074 1349     		ldr	r1, .L22+16
+ 372 0076 FFF7FEFF 		bl	__aeabi_fmul
+ 373              	.LVL51:
+ 374 007a 1349     		ldr	r1, .L22+20
+ 375 007c FFF7FEFF 		bl	__aeabi_fdiv
+ 376              	.LVL52:
+ 377 0080 124B     		ldr	r3, .L22+24
+ 378 0082 1860     		str	r0, [r3]	@ float
+ 110:main.c        ****     yg = SCALE_FACTOR * (float)y / 1000.0;
+ 379              		.loc 1 110 0
+ 380 0084 2846     		mov	r0, r5
+ 381 0086 FFF7FEFF 		bl	__aeabi_i2f
+ 382              	.LVL53:
+ 383 008a 0E49     		ldr	r1, .L22+16
+ 384 008c FFF7FEFF 		bl	__aeabi_fmul
+ 385              	.LVL54:
+ 386 0090 0D49     		ldr	r1, .L22+20
+ 387 0092 FFF7FEFF 		bl	__aeabi_fdiv
+ 388              	.LVL55:
+ 389 0096 0E4B     		ldr	r3, .L22+28
+ 390 0098 1860     		str	r0, [r3]	@ float
+ 111:main.c        ****     zg = SCALE_FACTOR * (float)z / 1000.0; 
+ 391              		.loc 1 111 0
+ 392 009a 2046     		mov	r0, r4
+ 393 009c FFF7FEFF 		bl	__aeabi_i2f
+ 394              	.LVL56:
+ 395 00a0 0849     		ldr	r1, .L22+16
+ 396 00a2 FFF7FEFF 		bl	__aeabi_fmul
+ 397              	.LVL57:
+ 398 00a6 0849     		ldr	r1, .L22+20
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 10
+
+
+ 399 00a8 FFF7FEFF 		bl	__aeabi_fdiv
+ 400              	.LVL58:
+ 401 00ac 094B     		ldr	r3, .L22+32
+ 402 00ae 1860     		str	r0, [r3]	@ float
+ 403 00b0 38BD     		pop	{r3, r4, r5, pc}
+ 404              	.L23:
+ 405 00b2 00BF     		.align	2
+ 406              	.L22:
+ 407 00b4 00000000 		.word	raw
+ 408 00b8 00000000 		.word	x
+ 409 00bc 00000000 		.word	y
+ 410 00c0 00000000 		.word	z
+ 411 00c4 9A997940 		.word	1081711002
+ 412 00c8 00007A44 		.word	1148846080
+ 413 00cc 00000000 		.word	xg
+ 414 00d0 00000000 		.word	yg
+ 415 00d4 00000000 		.word	zg
+ 416              		.cfi_endproc
+ 417              	.LFE68:
+ 418              		.size	Read_XYZ, .-Read_XYZ
+ 419              		.global	__aeabi_f2uiz
+ 420              		.section	.text.Offset_Calibration,"ax",%progbits
+ 421              		.align	2
+ 422              		.global	Offset_Calibration
+ 423              		.thumb
+ 424              		.thumb_func
+ 425              		.type	Offset_Calibration, %function
+ 426              	Offset_Calibration:
+ 427              	.LFB69:
+ 112:main.c        **** }
+ 113:main.c        **** 
+ 114:main.c        **** void Offset_Calibration(void)
+ 115:main.c        **** {
+ 428              		.loc 1 115 0
+ 429              		.cfi_startproc
+ 430              		@ args = 0, pretend = 0, frame = 0
+ 431              		@ frame_needed = 0, uses_anonymous_args = 0
+ 432 0000 38B5     		push	{r3, r4, r5, lr}
+ 433              		.cfi_def_cfa_offset 16
+ 434              		.cfi_offset 3, -16
+ 435              		.cfi_offset 4, -12
+ 436              		.cfi_offset 5, -8
+ 437              		.cfi_offset 14, -4
+ 116:main.c        ****     cal_X = -1 * ((Read_SPI(RA_DATAX1) << 8) | Read_SPI(RA_DATAX0));
+ 438              		.loc 1 116 0
+ 439 0002 3320     		movs	r0, #51
+ 440 0004 FFF7FEFF 		bl	Read_SPI
+ 441              	.LVL59:
+ 442 0008 0402     		lsls	r4, r0, #8
+ 443 000a 3220     		movs	r0, #50
+ 444 000c FFF7FEFF 		bl	Read_SPI
+ 445              	.LVL60:
+ 446 0010 2043     		orrs	r0, r0, r4
+ 447 0012 194C     		ldr	r4, .L26
+ 448 0014 4042     		negs	r0, r0
+ 449 0016 FFF7FEFF 		bl	__aeabi_i2f
+ 450              	.LVL61:
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 11
+
+
+ 451 001a 2060     		str	r0, [r4]	@ float
+ 117:main.c        ****     cal_Y = -1 * ((Read_SPI(RA_DATAY1) << 8) | Read_SPI(RA_DATAY0));
+ 452              		.loc 1 117 0
+ 453 001c 3520     		movs	r0, #53
+ 454 001e FFF7FEFF 		bl	Read_SPI
+ 455              	.LVL62:
+ 456 0022 0502     		lsls	r5, r0, #8
+ 457 0024 3420     		movs	r0, #52
+ 458 0026 FFF7FEFF 		bl	Read_SPI
+ 459              	.LVL63:
+ 460 002a 2843     		orrs	r0, r0, r5
+ 461 002c 4042     		negs	r0, r0
+ 462 002e FFF7FEFF 		bl	__aeabi_i2f
+ 463              	.LVL64:
+ 464 0032 6060     		str	r0, [r4, #4]	@ float
+ 118:main.c        ****     cal_Z = -1 * ((Read_SPI(RA_DATAZ1) << 8) | Read_SPI(RA_DATAZ0));
+ 465              		.loc 1 118 0
+ 466 0034 3720     		movs	r0, #55
+ 467 0036 FFF7FEFF 		bl	Read_SPI
+ 468              	.LVL65:
+ 469 003a 0502     		lsls	r5, r0, #8
+ 470 003c 3620     		movs	r0, #54
+ 471 003e FFF7FEFF 		bl	Read_SPI
+ 472              	.LVL66:
+ 473 0042 2843     		orrs	r0, r0, r5
+ 474 0044 4042     		negs	r0, r0
+ 475 0046 FFF7FEFF 		bl	__aeabi_i2f
+ 476              	.LVL67:
+ 477 004a A060     		str	r0, [r4, #8]	@ float
+ 119:main.c        ****     
+ 120:main.c        ****     Write_SPI(RA_OFSX, cal_X);
+ 478              		.loc 1 120 0
+ 479 004c 2068     		ldr	r0, [r4]	@ float
+ 480 004e FFF7FEFF 		bl	__aeabi_f2uiz
+ 481              	.LVL68:
+ 482 0052 C1B2     		uxtb	r1, r0
+ 483 0054 1E20     		movs	r0, #30
+ 484 0056 FFF7FEFF 		bl	Write_SPI
+ 485              	.LVL69:
+ 121:main.c        ****     Write_SPI(RA_OFSY, cal_Y);
+ 486              		.loc 1 121 0
+ 487 005a 6068     		ldr	r0, [r4, #4]	@ float
+ 488 005c FFF7FEFF 		bl	__aeabi_f2uiz
+ 489              	.LVL70:
+ 490 0060 C1B2     		uxtb	r1, r0
+ 491 0062 1F20     		movs	r0, #31
+ 492 0064 FFF7FEFF 		bl	Write_SPI
+ 493              	.LVL71:
+ 122:main.c        ****     Write_SPI(RA_OFSZ, cal_Z);
+ 494              		.loc 1 122 0
+ 495 0068 A068     		ldr	r0, [r4, #8]	@ float
+ 496 006a FFF7FEFF 		bl	__aeabi_f2uiz
+ 497              	.LVL72:
+ 498 006e C1B2     		uxtb	r1, r0
+ 499 0070 2020     		movs	r0, #32
+ 500 0072 FFF7FEFF 		bl	Write_SPI
+ 501              	.LVL73:
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 12
+
+
+ 502 0076 38BD     		pop	{r3, r4, r5, pc}
+ 503              	.L27:
+ 504              		.align	2
+ 505              	.L26:
+ 506 0078 00000000 		.word	.LANCHOR0
+ 507              		.cfi_endproc
+ 508              	.LFE69:
+ 509              		.size	Offset_Calibration, .-Offset_Calibration
+ 510              		.global	__aeabi_f2d
+ 511              		.section	.text.main,"ax",%progbits
+ 512              		.align	2
+ 513              		.global	main
+ 514              		.thumb
+ 515              		.thumb_func
+ 516              		.type	main, %function
+ 517              	main:
+ 518              	.LFB70:
+ 123:main.c        **** }
+ 124:main.c        **** 
+ 125:main.c        **** int main()
+ 126:main.c        **** {
+ 519              		.loc 1 126 0
+ 520              		.cfi_startproc
+ 521              		@ Volatile: function does not return.
+ 522              		@ args = 0, pretend = 0, frame = 0
+ 523              		@ frame_needed = 0, uses_anonymous_args = 0
+ 524 0000 08B5     		push	{r3, lr}
+ 525              		.cfi_def_cfa_offset 8
+ 526              		.cfi_offset 3, -8
+ 527              		.cfi_offset 14, -4
+ 127:main.c        ****     CyGlobalIntEnable; /* Enable global interrupts. */
+ 528              		.loc 1 127 0
+ 529              		.syntax unified
+ 530              	@ 127 "main.c" 1
+ 531 0002 62B6     		CPSIE   i
+ 532              	@ 0 "" 2
+ 128:main.c        **** 
+ 129:main.c        ****     SPIM_Start();
+ 533              		.loc 1 129 0
+ 534              		.thumb
+ 535              		.syntax unified
+ 536 0004 FFF7FEFF 		bl	SPIM_Start
+ 537              	.LVL74:
+ 130:main.c        ****     Clock_Start();
+ 538              		.loc 1 130 0
+ 539 0008 FFF7FEFF 		bl	Clock_Start
+ 540              	.LVL75:
+ 131:main.c        ****     UART_Start();
+ 541              		.loc 1 131 0
+ 542 000c FFF7FEFF 		bl	UART_Start
+ 543              	.LVL76:
+ 132:main.c        ****     
+ 133:main.c        ****     ADXL345_Init();
+ 544              		.loc 1 133 0
+ 545 0010 FFF7FEFF 		bl	ADXL345_Init
+ 546              	.LVL77:
+ 134:main.c        ****     //Offset_Calibration();
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 13
+
+
+ 135:main.c        ****     
+ 136:main.c        ****     UART_PutString("***ADXL345***");
+ 547              		.loc 1 136 0
+ 548 0014 2A48     		ldr	r0, .L31
+ 549 0016 FFF7FEFF 		bl	UART_PutString
+ 550              	.LVL78:
+ 137:main.c        ****     UART_PutString("\r\n");
+ 551              		.loc 1 137 0
+ 552 001a 2A48     		ldr	r0, .L31+4
+ 553 001c FFF7FEFF 		bl	UART_PutString
+ 554              	.LVL79:
+ 555              	.L29:
+ 138:main.c        ****     
+ 139:main.c        ****     for(;;)
+ 140:main.c        ****     {        
+ 141:main.c        ****         Get_Accel_Values();     // reads data byte by byte in multiple sessions
+ 556              		.loc 1 141 0 discriminator 1
+ 557 0020 FFF7FEFF 		bl	Get_Accel_Values
+ 558              	.LVL80:
+ 142:main.c        ****         //Read_XYZ();           // read data in one session
+ 143:main.c        **** 
+ 144:main.c        ****         sprintf(buffer,"X: %3d   ", x);
+ 559              		.loc 1 144 0 discriminator 1
+ 560 0024 284C     		ldr	r4, .L31+8
+ 561 0026 294B     		ldr	r3, .L31+12
+ 562 0028 B3F90020 		ldrsh	r2, [r3]
+ 563 002c 2849     		ldr	r1, .L31+16
+ 564 002e 2046     		mov	r0, r4
+ 565 0030 FFF7FEFF 		bl	sprintf
+ 566              	.LVL81:
+ 145:main.c        ****         UART_PutString(buffer);
+ 567              		.loc 1 145 0 discriminator 1
+ 568 0034 2046     		mov	r0, r4
+ 569 0036 FFF7FEFF 		bl	UART_PutString
+ 570              	.LVL82:
+ 146:main.c        **** 
+ 147:main.c        ****         sprintf(buffer,"Y: %3d   ", y);
+ 571              		.loc 1 147 0 discriminator 1
+ 572 003a 264B     		ldr	r3, .L31+20
+ 573 003c B3F90020 		ldrsh	r2, [r3]
+ 574 0040 2549     		ldr	r1, .L31+24
+ 575 0042 2046     		mov	r0, r4
+ 576 0044 FFF7FEFF 		bl	sprintf
+ 577              	.LVL83:
+ 148:main.c        ****         UART_PutString(buffer);
+ 578              		.loc 1 148 0 discriminator 1
+ 579 0048 2046     		mov	r0, r4
+ 580 004a FFF7FEFF 		bl	UART_PutString
+ 581              	.LVL84:
+ 149:main.c        **** 
+ 150:main.c        ****         sprintf(buffer,"Z: %3d   ", z);
+ 582              		.loc 1 150 0 discriminator 1
+ 583 004e 234B     		ldr	r3, .L31+28
+ 584 0050 B3F90020 		ldrsh	r2, [r3]
+ 585 0054 2249     		ldr	r1, .L31+32
+ 586 0056 2046     		mov	r0, r4
+ 587 0058 FFF7FEFF 		bl	sprintf
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 14
+
+
+ 588              	.LVL85:
+ 151:main.c        ****         UART_PutString(buffer);
+ 589              		.loc 1 151 0 discriminator 1
+ 590 005c 2046     		mov	r0, r4
+ 591 005e FFF7FEFF 		bl	UART_PutString
+ 592              	.LVL86:
+ 152:main.c        ****         
+ 153:main.c        ****         sprintf(buffer,"Xg: %.2f   ", xg);
+ 593              		.loc 1 153 0 discriminator 1
+ 594 0062 204B     		ldr	r3, .L31+36
+ 595 0064 1868     		ldr	r0, [r3]	@ float
+ 596 0066 FFF7FEFF 		bl	__aeabi_f2d
+ 597              	.LVL87:
+ 598 006a 0246     		mov	r2, r0
+ 599 006c 0B46     		mov	r3, r1
+ 600 006e 1E49     		ldr	r1, .L31+40
+ 601 0070 2046     		mov	r0, r4
+ 602 0072 FFF7FEFF 		bl	sprintf
+ 603              	.LVL88:
+ 154:main.c        ****         UART_PutString(buffer);
+ 604              		.loc 1 154 0 discriminator 1
+ 605 0076 2046     		mov	r0, r4
+ 606 0078 FFF7FEFF 		bl	UART_PutString
+ 607              	.LVL89:
+ 155:main.c        **** 
+ 156:main.c        ****         sprintf(buffer,"Yg: %.2f   ", yg);
+ 608              		.loc 1 156 0 discriminator 1
+ 609 007c 1B4B     		ldr	r3, .L31+44
+ 610 007e 1868     		ldr	r0, [r3]	@ float
+ 611 0080 FFF7FEFF 		bl	__aeabi_f2d
+ 612              	.LVL90:
+ 613 0084 0246     		mov	r2, r0
+ 614 0086 0B46     		mov	r3, r1
+ 615 0088 1949     		ldr	r1, .L31+48
+ 616 008a 2046     		mov	r0, r4
+ 617 008c FFF7FEFF 		bl	sprintf
+ 618              	.LVL91:
+ 157:main.c        ****         UART_PutString(buffer);
+ 619              		.loc 1 157 0 discriminator 1
+ 620 0090 2046     		mov	r0, r4
+ 621 0092 FFF7FEFF 		bl	UART_PutString
+ 622              	.LVL92:
+ 158:main.c        **** 
+ 159:main.c        ****         sprintf(buffer,"Zg: %.2f   ", zg);
+ 623              		.loc 1 159 0 discriminator 1
+ 624 0096 174B     		ldr	r3, .L31+52
+ 625 0098 1868     		ldr	r0, [r3]	@ float
+ 626 009a FFF7FEFF 		bl	__aeabi_f2d
+ 627              	.LVL93:
+ 628 009e 0246     		mov	r2, r0
+ 629 00a0 0B46     		mov	r3, r1
+ 630 00a2 1549     		ldr	r1, .L31+56
+ 631 00a4 2046     		mov	r0, r4
+ 632 00a6 FFF7FEFF 		bl	sprintf
+ 633              	.LVL94:
+ 160:main.c        ****         UART_PutString(buffer);
+ 634              		.loc 1 160 0 discriminator 1
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 15
+
+
+ 635 00aa 2046     		mov	r0, r4
+ 636 00ac FFF7FEFF 		bl	UART_PutString
+ 637              	.LVL95:
+ 161:main.c        ****         
+ 162:main.c        ****         UART_PutString("\r\n");
+ 638              		.loc 1 162 0 discriminator 1
+ 639 00b0 0448     		ldr	r0, .L31+4
+ 640 00b2 FFF7FEFF 		bl	UART_PutString
+ 641              	.LVL96:
+ 163:main.c        ****         
+ 164:main.c        ****         CyDelay(500);
+ 642              		.loc 1 164 0 discriminator 1
+ 643 00b6 4FF4FA70 		mov	r0, #500
+ 644 00ba FFF7FEFF 		bl	CyDelay
+ 645              	.LVL97:
+ 646 00be AFE7     		b	.L29
+ 647              	.L32:
+ 648              		.align	2
+ 649              	.L31:
+ 650 00c0 00000000 		.word	.LC0
+ 651 00c4 10000000 		.word	.LC1
+ 652 00c8 00000000 		.word	buffer
+ 653 00cc 00000000 		.word	x
+ 654 00d0 14000000 		.word	.LC2
+ 655 00d4 00000000 		.word	y
+ 656 00d8 20000000 		.word	.LC3
+ 657 00dc 00000000 		.word	z
+ 658 00e0 2C000000 		.word	.LC4
+ 659 00e4 00000000 		.word	xg
+ 660 00e8 38000000 		.word	.LC5
+ 661 00ec 00000000 		.word	yg
+ 662 00f0 44000000 		.word	.LC6
+ 663 00f4 00000000 		.word	zg
+ 664 00f8 50000000 		.word	.LC7
+ 665              		.cfi_endproc
+ 666              	.LFE70:
+ 667              		.size	main, .-main
+ 668              		.comm	raw,6,4
+ 669              		.comm	buffer,50,4
+ 670              		.comm	zg,4,4
+ 671              		.comm	yg,4,4
+ 672              		.comm	xg,4,4
+ 673              		.comm	z,2,2
+ 674              		.comm	y,2,2
+ 675              		.comm	x,2,2
+ 676              		.global	cal_Z
+ 677              		.global	cal_Y
+ 678              		.global	cal_X
+ 679              		.section	.rodata.str1.4,"aMS",%progbits,1
+ 680              		.align	2
+ 681              	.LC0:
+ 682 0000 2A2A2A41 		.ascii	"***ADXL345***\000"
+ 682      44584C33 
+ 682      34352A2A 
+ 682      2A00
+ 683 000e 0000     		.space	2
+ 684              	.LC1:
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 16
+
+
+ 685 0010 0D0A00   		.ascii	"\015\012\000"
+ 686 0013 00       		.space	1
+ 687              	.LC2:
+ 688 0014 583A2025 		.ascii	"X: %3d   \000"
+ 688      33642020 
+ 688      2000
+ 689 001e 0000     		.space	2
+ 690              	.LC3:
+ 691 0020 593A2025 		.ascii	"Y: %3d   \000"
+ 691      33642020 
+ 691      2000
+ 692 002a 0000     		.space	2
+ 693              	.LC4:
+ 694 002c 5A3A2025 		.ascii	"Z: %3d   \000"
+ 694      33642020 
+ 694      2000
+ 695 0036 0000     		.space	2
+ 696              	.LC5:
+ 697 0038 58673A20 		.ascii	"Xg: %.2f   \000"
+ 697      252E3266 
+ 697      20202000 
+ 698              	.LC6:
+ 699 0044 59673A20 		.ascii	"Yg: %.2f   \000"
+ 699      252E3266 
+ 699      20202000 
+ 700              	.LC7:
+ 701 0050 5A673A20 		.ascii	"Zg: %.2f   \000"
+ 701      252E3266 
+ 701      20202000 
+ 702              		.bss
+ 703              		.align	2
+ 704              		.set	.LANCHOR0,. + 0
+ 705              		.type	cal_X, %object
+ 706              		.size	cal_X, 4
+ 707              	cal_X:
+ 708 0000 00000000 		.space	4
+ 709              		.type	cal_Y, %object
+ 710              		.size	cal_Y, 4
+ 711              	cal_Y:
+ 712 0004 00000000 		.space	4
+ 713              		.type	cal_Z, %object
+ 714              		.size	cal_Z, 4
+ 715              	cal_Z:
+ 716 0008 00000000 		.space	4
+ 717              		.text
+ 718              	.Letext0:
+ 719              		.file 2 "c:\\program files (x86)\\cypress\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.
+ 720              		.file 3 "c:\\program files (x86)\\cypress\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4.
+ 721              		.file 4 "Generated_Source\\PSoC5/cytypes.h"
+ 722              		.file 5 "Generated_Source\\PSoC5/core_cm3.h"
+ 723              		.file 6 "Generated_Source\\PSoC5/SPIM.h"
+ 724              		.file 7 "Generated_Source\\PSoC5/CyLib.h"
+ 725              		.file 8 "Generated_Source\\PSoC5/Clock.h"
+ 726              		.file 9 "Generated_Source\\PSoC5/UART.h"
+ 727              		.file 10 "c:\\program files (x86)\\cypress\\psoc creator\\4.4\\psoc creator\\import\\gnu\\arm\\5.4
+ 728              		.section	.debug_info,"",%progbits
+ 729              	.Ldebug_info0:
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 17
+
+
+ 730 0000 5D070000 		.4byte	0x75d
+ 731 0004 0400     		.2byte	0x4
+ 732 0006 00000000 		.4byte	.Ldebug_abbrev0
+ 733 000a 04       		.byte	0x4
+ 734 000b 01       		.uleb128 0x1
+ 735 000c 9B000000 		.4byte	.LASF42
+ 736 0010 0C       		.byte	0xc
+ 737 0011 28020000 		.4byte	.LASF43
+ 738 0015 72010000 		.4byte	.LASF44
+ 739 0019 00000000 		.4byte	.Ldebug_ranges0+0
+ 740 001d 00000000 		.4byte	0
+ 741 0021 00000000 		.4byte	.Ldebug_line0
+ 742 0025 02       		.uleb128 0x2
+ 743 0026 01       		.byte	0x1
+ 744 0027 06       		.byte	0x6
+ 745 0028 83020000 		.4byte	.LASF0
+ 746 002c 02       		.uleb128 0x2
+ 747 002d 01       		.byte	0x1
+ 748 002e 08       		.byte	0x8
+ 749 002f 8D000000 		.4byte	.LASF1
+ 750 0033 02       		.uleb128 0x2
+ 751 0034 02       		.byte	0x2
+ 752 0035 05       		.byte	0x5
+ 753 0036 45020000 		.4byte	.LASF2
+ 754 003a 02       		.uleb128 0x2
+ 755 003b 02       		.byte	0x2
+ 756 003c 07       		.byte	0x7
+ 757 003d 2D000000 		.4byte	.LASF3
+ 758 0041 03       		.uleb128 0x3
+ 759 0042 23000000 		.4byte	.LASF9
+ 760 0046 02       		.byte	0x2
+ 761 0047 3F       		.byte	0x3f
+ 762 0048 4C000000 		.4byte	0x4c
+ 763 004c 02       		.uleb128 0x2
+ 764 004d 04       		.byte	0x4
+ 765 004e 05       		.byte	0x5
+ 766 004f 68020000 		.4byte	.LASF4
+ 767 0053 02       		.uleb128 0x2
+ 768 0054 04       		.byte	0x4
+ 769 0055 07       		.byte	0x7
+ 770 0056 38010000 		.4byte	.LASF5
+ 771 005a 02       		.uleb128 0x2
+ 772 005b 08       		.byte	0x8
+ 773 005c 05       		.byte	0x5
+ 774 005d 1A020000 		.4byte	.LASF6
+ 775 0061 02       		.uleb128 0x2
+ 776 0062 08       		.byte	0x8
+ 777 0063 07       		.byte	0x7
+ 778 0064 E5010000 		.4byte	.LASF7
+ 779 0068 04       		.uleb128 0x4
+ 780 0069 04       		.byte	0x4
+ 781 006a 05       		.byte	0x5
+ 782 006b 696E7400 		.ascii	"int\000"
+ 783 006f 02       		.uleb128 0x2
+ 784 0070 04       		.byte	0x4
+ 785 0071 07       		.byte	0x7
+ 786 0072 D8010000 		.4byte	.LASF8
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 18
+
+
+ 787 0076 03       		.uleb128 0x3
+ 788 0077 62000000 		.4byte	.LASF10
+ 789 007b 03       		.byte	0x3
+ 790 007c 2C       		.byte	0x2c
+ 791 007d 41000000 		.4byte	0x41
+ 792 0081 05       		.uleb128 0x5
+ 793 0082 56020000 		.4byte	.LASF11
+ 794 0086 04       		.byte	0x4
+ 795 0087 E901     		.2byte	0x1e9
+ 796 0089 2C000000 		.4byte	0x2c
+ 797 008d 05       		.uleb128 0x5
+ 798 008e 32010000 		.4byte	.LASF12
+ 799 0092 04       		.byte	0x4
+ 800 0093 ED01     		.2byte	0x1ed
+ 801 0095 33000000 		.4byte	0x33
+ 802 0099 02       		.uleb128 0x2
+ 803 009a 04       		.byte	0x4
+ 804 009b 04       		.byte	0x4
+ 805 009c 6F000000 		.4byte	.LASF13
+ 806 00a0 02       		.uleb128 0x2
+ 807 00a1 08       		.byte	0x8
+ 808 00a2 04       		.byte	0x4
+ 809 00a3 A4010000 		.4byte	.LASF14
+ 810 00a7 02       		.uleb128 0x2
+ 811 00a8 01       		.byte	0x1
+ 812 00a9 08       		.byte	0x8
+ 813 00aa 2F020000 		.4byte	.LASF15
+ 814 00ae 02       		.uleb128 0x2
+ 815 00af 08       		.byte	0x8
+ 816 00b0 04       		.byte	0x4
+ 817 00b1 FC010000 		.4byte	.LASF16
+ 818 00b5 02       		.uleb128 0x2
+ 819 00b6 04       		.byte	0x4
+ 820 00b7 07       		.byte	0x7
+ 821 00b8 08020000 		.4byte	.LASF17
+ 822 00bc 06       		.uleb128 0x6
+ 823 00bd 58000000 		.4byte	.LASF20
+ 824 00c1 01       		.byte	0x1
+ 825 00c2 2A       		.byte	0x2a
+ 826 00c3 00000000 		.4byte	.LFB64
+ 827 00c7 1A000000 		.4byte	.LFE64-.LFB64
+ 828 00cb 01       		.uleb128 0x1
+ 829 00cc 9C       		.byte	0x9c
+ 830 00cd 25010000 		.4byte	0x125
+ 831 00d1 07       		.uleb128 0x7
+ 832 00d2 72656700 		.ascii	"reg\000"
+ 833 00d6 01       		.byte	0x1
+ 834 00d7 2A       		.byte	0x2a
+ 835 00d8 2C000000 		.4byte	0x2c
+ 836 00dc 00000000 		.4byte	.LLST0
+ 837 00e0 08       		.uleb128 0x8
+ 838 00e1 75000000 		.4byte	.LASF18
+ 839 00e5 01       		.byte	0x1
+ 840 00e6 2A       		.byte	0x2a
+ 841 00e7 2C000000 		.4byte	0x2c
+ 842 00eb 21000000 		.4byte	.LLST1
+ 843 00ef 09       		.uleb128 0x9
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 19
+
+
+ 844 00f0 6A000000 		.4byte	.LASF19
+ 845 00f4 01       		.byte	0x1
+ 846 00f5 2C       		.byte	0x2c
+ 847 00f6 2C000000 		.4byte	0x2c
+ 848 00fa 42000000 		.4byte	.LLST2
+ 849 00fe 0A       		.uleb128 0xa
+ 850 00ff 08000000 		.4byte	.LVL2
+ 851 0103 E7060000 		.4byte	0x6e7
+ 852 0107 0B       		.uleb128 0xb
+ 853 0108 0E000000 		.4byte	.LVL3
+ 854 010c E7060000 		.4byte	0x6e7
+ 855 0110 1B010000 		.4byte	0x11b
+ 856 0114 0C       		.uleb128 0xc
+ 857 0115 01       		.uleb128 0x1
+ 858 0116 50       		.byte	0x50
+ 859 0117 02       		.uleb128 0x2
+ 860 0118 74       		.byte	0x74
+ 861 0119 00       		.sleb128 0
+ 862 011a 00       		.byte	0
+ 863 011b 0A       		.uleb128 0xa
+ 864 011c 12000000 		.4byte	.LVL4
+ 865 0120 F2060000 		.4byte	0x6f2
+ 866 0124 00       		.byte	0
+ 867 0125 0D       		.uleb128 0xd
+ 868 0126 11020000 		.4byte	.LASF24
+ 869 012a 01       		.byte	0x1
+ 870 012b 33       		.byte	0x33
+ 871 012c 2C000000 		.4byte	0x2c
+ 872 0130 00000000 		.4byte	.LFB65
+ 873 0134 3A000000 		.4byte	.LFE65-.LFB65
+ 874 0138 01       		.uleb128 0x1
+ 875 0139 9C       		.byte	0x9c
+ 876 013a C8010000 		.4byte	0x1c8
+ 877 013e 07       		.uleb128 0x7
+ 878 013f 72656700 		.ascii	"reg\000"
+ 879 0143 01       		.byte	0x1
+ 880 0144 33       		.byte	0x33
+ 881 0145 2C000000 		.4byte	0x2c
+ 882 0149 55000000 		.4byte	.LLST3
+ 883 014d 0E       		.uleb128 0xe
+ 884 014e 75000000 		.4byte	.LASF18
+ 885 0152 01       		.byte	0x1
+ 886 0153 35       		.byte	0x35
+ 887 0154 2C000000 		.4byte	0x2c
+ 888 0158 01       		.uleb128 0x1
+ 889 0159 54       		.byte	0x54
+ 890 015a 09       		.uleb128 0x9
+ 891 015b 6A000000 		.4byte	.LASF19
+ 892 015f 01       		.byte	0x1
+ 893 0160 36       		.byte	0x36
+ 894 0161 2C000000 		.4byte	0x2c
+ 895 0165 76000000 		.4byte	.LLST4
+ 896 0169 0A       		.uleb128 0xa
+ 897 016a 0A000000 		.4byte	.LVL7
+ 898 016e FD060000 		.4byte	0x6fd
+ 899 0172 0B       		.uleb128 0xb
+ 900 0173 10000000 		.4byte	.LVL8
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 20
+
+
+ 901 0177 E7060000 		.4byte	0x6e7
+ 902 017b 86010000 		.4byte	0x186
+ 903 017f 0C       		.uleb128 0xc
+ 904 0180 01       		.uleb128 0x1
+ 905 0181 50       		.byte	0x50
+ 906 0182 02       		.uleb128 0x2
+ 907 0183 74       		.byte	0x74
+ 908 0184 00       		.sleb128 0
+ 909 0185 00       		.byte	0
+ 910 0186 0B       		.uleb128 0xb
+ 911 0187 16000000 		.4byte	.LVL9
+ 912 018b E7060000 		.4byte	0x6e7
+ 913 018f 9A010000 		.4byte	0x19a
+ 914 0193 0C       		.uleb128 0xc
+ 915 0194 01       		.uleb128 0x1
+ 916 0195 50       		.byte	0x50
+ 917 0196 02       		.uleb128 0x2
+ 918 0197 09       		.byte	0x9
+ 919 0198 FF       		.byte	0xff
+ 920 0199 00       		.byte	0
+ 921 019a 0A       		.uleb128 0xa
+ 922 019b 1A000000 		.4byte	.LVL10
+ 923 019f F2060000 		.4byte	0x6f2
+ 924 01a3 0A       		.uleb128 0xa
+ 925 01a4 24000000 		.4byte	.LVL11
+ 926 01a8 08070000 		.4byte	0x708
+ 927 01ac 0A       		.uleb128 0xa
+ 928 01ad 2C000000 		.4byte	.LVL12
+ 929 01b1 13070000 		.4byte	0x713
+ 930 01b5 0A       		.uleb128 0xa
+ 931 01b6 30000000 		.4byte	.LVL13
+ 932 01ba 13070000 		.4byte	0x713
+ 933 01be 0A       		.uleb128 0xa
+ 934 01bf 36000000 		.4byte	.LVL15
+ 935 01c3 FD060000 		.4byte	0x6fd
+ 936 01c7 00       		.byte	0
+ 937 01c8 06       		.uleb128 0x6
+ 938 01c9 4B000000 		.4byte	.LASF21
+ 939 01cd 01       		.byte	0x1
+ 940 01ce 44       		.byte	0x44
+ 941 01cf 00000000 		.4byte	.LFB66
+ 942 01d3 28000000 		.4byte	.LFE66-.LFB66
+ 943 01d7 01       		.uleb128 0x1
+ 944 01d8 9C       		.byte	0x9c
+ 945 01d9 4B020000 		.4byte	0x24b
+ 946 01dd 0B       		.uleb128 0xb
+ 947 01de 08000000 		.4byte	.LVL16
+ 948 01e2 1E070000 		.4byte	0x71e
+ 949 01e6 F0010000 		.4byte	0x1f0
+ 950 01ea 0C       		.uleb128 0xc
+ 951 01eb 01       		.uleb128 0x1
+ 952 01ec 50       		.byte	0x50
+ 953 01ed 01       		.uleb128 0x1
+ 954 01ee 32       		.byte	0x32
+ 955 01ef 00       		.byte	0
+ 956 01f0 0B       		.uleb128 0xb
+ 957 01f1 10000000 		.4byte	.LVL17
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 21
+
+
+ 958 01f5 BC000000 		.4byte	0xbc
+ 959 01f9 09020000 		.4byte	0x209
+ 960 01fd 0C       		.uleb128 0xc
+ 961 01fe 01       		.uleb128 0x1
+ 962 01ff 50       		.byte	0x50
+ 963 0200 02       		.uleb128 0x2
+ 964 0201 08       		.byte	0x8
+ 965 0202 2D       		.byte	0x2d
+ 966 0203 0C       		.uleb128 0xc
+ 967 0204 01       		.uleb128 0x1
+ 968 0205 51       		.byte	0x51
+ 969 0206 01       		.uleb128 0x1
+ 970 0207 38       		.byte	0x38
+ 971 0208 00       		.byte	0
+ 972 0209 0B       		.uleb128 0xb
+ 973 020a 18000000 		.4byte	.LVL18
+ 974 020e BC000000 		.4byte	0xbc
+ 975 0212 22020000 		.4byte	0x222
+ 976 0216 0C       		.uleb128 0xc
+ 977 0217 01       		.uleb128 0x1
+ 978 0218 50       		.byte	0x50
+ 979 0219 02       		.uleb128 0x2
+ 980 021a 08       		.byte	0x8
+ 981 021b 2C       		.byte	0x2c
+ 982 021c 0C       		.uleb128 0xc
+ 983 021d 01       		.uleb128 0x1
+ 984 021e 51       		.byte	0x51
+ 985 021f 01       		.uleb128 0x1
+ 986 0220 38       		.byte	0x38
+ 987 0221 00       		.byte	0
+ 988 0222 0B       		.uleb128 0xb
+ 989 0223 20000000 		.4byte	.LVL19
+ 990 0227 BC000000 		.4byte	0xbc
+ 991 022b 3B020000 		.4byte	0x23b
+ 992 022f 0C       		.uleb128 0xc
+ 993 0230 01       		.uleb128 0x1
+ 994 0231 50       		.byte	0x50
+ 995 0232 02       		.uleb128 0x2
+ 996 0233 08       		.byte	0x8
+ 997 0234 31       		.byte	0x31
+ 998 0235 0C       		.uleb128 0xc
+ 999 0236 01       		.uleb128 0x1
+ 1000 0237 51       		.byte	0x51
+ 1001 0238 01       		.uleb128 0x1
+ 1002 0239 3B       		.byte	0x3b
+ 1003 023a 00       		.byte	0
+ 1004 023b 0F       		.uleb128 0xf
+ 1005 023c 26000000 		.4byte	.LVL20
+ 1006 0240 1E070000 		.4byte	0x71e
+ 1007 0244 0C       		.uleb128 0xc
+ 1008 0245 01       		.uleb128 0x1
+ 1009 0246 50       		.byte	0x50
+ 1010 0247 01       		.uleb128 0x1
+ 1011 0248 32       		.byte	0x32
+ 1012 0249 00       		.byte	0
+ 1013 024a 00       		.byte	0
+ 1014 024b 10       		.uleb128 0x10
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 22
+
+
+ 1015 024c 34020000 		.4byte	.LASF22
+ 1016 0250 01       		.byte	0x1
+ 1017 0251 4E       		.byte	0x4e
+ 1018 0252 00000000 		.4byte	.LFB67
+ 1019 0256 A8000000 		.4byte	.LFE67-.LFB67
+ 1020 025a 01       		.uleb128 0x1
+ 1021 025b 9C       		.byte	0x9c
+ 1022 025c D5020000 		.4byte	0x2d5
+ 1023 0260 0B       		.uleb128 0xb
+ 1024 0261 08000000 		.4byte	.LVL21
+ 1025 0265 25010000 		.4byte	0x125
+ 1026 0269 74020000 		.4byte	0x274
+ 1027 026d 0C       		.uleb128 0xc
+ 1028 026e 01       		.uleb128 0x1
+ 1029 026f 50       		.byte	0x50
+ 1030 0270 02       		.uleb128 0x2
+ 1031 0271 08       		.byte	0x8
+ 1032 0272 33       		.byte	0x33
+ 1033 0273 00       		.byte	0
+ 1034 0274 0B       		.uleb128 0xb
+ 1035 0275 10000000 		.4byte	.LVL22
+ 1036 0279 25010000 		.4byte	0x125
+ 1037 027d 88020000 		.4byte	0x288
+ 1038 0281 0C       		.uleb128 0xc
+ 1039 0282 01       		.uleb128 0x1
+ 1040 0283 50       		.byte	0x50
+ 1041 0284 02       		.uleb128 0x2
+ 1042 0285 08       		.byte	0x8
+ 1043 0286 32       		.byte	0x32
+ 1044 0287 00       		.byte	0
+ 1045 0288 0B       		.uleb128 0xb
+ 1046 0289 1C000000 		.4byte	.LVL23
+ 1047 028d 25010000 		.4byte	0x125
+ 1048 0291 9C020000 		.4byte	0x29c
+ 1049 0295 0C       		.uleb128 0xc
+ 1050 0296 01       		.uleb128 0x1
+ 1051 0297 50       		.byte	0x50
+ 1052 0298 02       		.uleb128 0x2
+ 1053 0299 08       		.byte	0x8
+ 1054 029a 35       		.byte	0x35
+ 1055 029b 00       		.byte	0
+ 1056 029c 0B       		.uleb128 0xb
+ 1057 029d 24000000 		.4byte	.LVL24
+ 1058 02a1 25010000 		.4byte	0x125
+ 1059 02a5 B0020000 		.4byte	0x2b0
+ 1060 02a9 0C       		.uleb128 0xc
+ 1061 02aa 01       		.uleb128 0x1
+ 1062 02ab 50       		.byte	0x50
+ 1063 02ac 02       		.uleb128 0x2
+ 1064 02ad 08       		.byte	0x8
+ 1065 02ae 34       		.byte	0x34
+ 1066 02af 00       		.byte	0
+ 1067 02b0 0B       		.uleb128 0xb
+ 1068 02b1 30000000 		.4byte	.LVL25
+ 1069 02b5 25010000 		.4byte	0x125
+ 1070 02b9 C4020000 		.4byte	0x2c4
+ 1071 02bd 0C       		.uleb128 0xc
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 23
+
+
+ 1072 02be 01       		.uleb128 0x1
+ 1073 02bf 50       		.byte	0x50
+ 1074 02c0 02       		.uleb128 0x2
+ 1075 02c1 08       		.byte	0x8
+ 1076 02c2 37       		.byte	0x37
+ 1077 02c3 00       		.byte	0
+ 1078 02c4 0F       		.uleb128 0xf
+ 1079 02c5 38000000 		.4byte	.LVL26
+ 1080 02c9 25010000 		.4byte	0x125
+ 1081 02cd 0C       		.uleb128 0xc
+ 1082 02ce 01       		.uleb128 0x1
+ 1083 02cf 50       		.byte	0x50
+ 1084 02d0 02       		.uleb128 0x2
+ 1085 02d1 08       		.byte	0x8
+ 1086 02d2 36       		.byte	0x36
+ 1087 02d3 00       		.byte	0
+ 1088 02d4 00       		.byte	0
+ 1089 02d5 11       		.uleb128 0x11
+ 1090 02d6 29010000 		.4byte	.LASF45
+ 1091 02da 01       		.byte	0x1
+ 1092 02db 59       		.byte	0x59
+ 1093 02dc 00000000 		.4byte	.LFB68
+ 1094 02e0 D8000000 		.4byte	.LFE68-.LFB68
+ 1095 02e4 01       		.uleb128 0x1
+ 1096 02e5 9C       		.byte	0x9c
+ 1097 02e6 7D030000 		.4byte	0x37d
+ 1098 02ea 12       		.uleb128 0x12
+ 1099 02eb 6A000000 		.4byte	.LASF19
+ 1100 02ef 01       		.byte	0x1
+ 1101 02f0 5B       		.byte	0x5b
+ 1102 02f1 2C000000 		.4byte	0x2c
+ 1103 02f5 72       		.sleb128 -14
+ 1104 02f6 13       		.uleb128 0x13
+ 1105 02f7 0C000000 		.4byte	.LBB2
+ 1106 02fb 10000000 		.4byte	.LBE2-.LBB2
+ 1107 02ff 20030000 		.4byte	0x320
+ 1108 0303 14       		.uleb128 0x14
+ 1109 0304 6900     		.ascii	"i\000"
+ 1110 0306 01       		.byte	0x1
+ 1111 0307 5F       		.byte	0x5f
+ 1112 0308 68000000 		.4byte	0x68
+ 1113 030c 89000000 		.4byte	.LLST5
+ 1114 0310 0F       		.uleb128 0xf
+ 1115 0311 16000000 		.4byte	.LVL40
+ 1116 0315 E7060000 		.4byte	0x6e7
+ 1117 0319 0C       		.uleb128 0xc
+ 1118 031a 01       		.uleb128 0x1
+ 1119 031b 50       		.byte	0x50
+ 1120 031c 01       		.uleb128 0x1
+ 1121 031d 30       		.byte	0x30
+ 1122 031e 00       		.byte	0
+ 1123 031f 00       		.byte	0
+ 1124 0320 13       		.uleb128 0x13
+ 1125 0321 32000000 		.4byte	.LBB3
+ 1126 0325 12000000 		.4byte	.LBE3-.LBB3
+ 1127 0329 44030000 		.4byte	0x344
+ 1128 032d 14       		.uleb128 0x14
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 24
+
+
+ 1129 032e 6900     		.ascii	"i\000"
+ 1130 0330 01       		.byte	0x1
+ 1131 0331 66       		.byte	0x66
+ 1132 0332 68000000 		.4byte	0x68
+ 1133 0336 A8000000 		.4byte	.LLST6
+ 1134 033a 0A       		.uleb128 0xa
+ 1135 033b 3A000000 		.4byte	.LVL47
+ 1136 033f 13070000 		.4byte	0x713
+ 1137 0343 00       		.byte	0
+ 1138 0344 0A       		.uleb128 0xa
+ 1139 0345 06000000 		.4byte	.LVL37
+ 1140 0349 FD060000 		.4byte	0x6fd
+ 1141 034d 0B       		.uleb128 0xb
+ 1142 034e 0C000000 		.4byte	.LVL38
+ 1143 0352 E7060000 		.4byte	0x6e7
+ 1144 0356 61030000 		.4byte	0x361
+ 1145 035a 0C       		.uleb128 0xc
+ 1146 035b 01       		.uleb128 0x1
+ 1147 035c 50       		.byte	0x50
+ 1148 035d 02       		.uleb128 0x2
+ 1149 035e 09       		.byte	0x9
+ 1150 035f F2       		.byte	0xf2
+ 1151 0360 00       		.byte	0
+ 1152 0361 0A       		.uleb128 0xa
+ 1153 0362 20000000 		.4byte	.LVL42
+ 1154 0366 F2060000 		.4byte	0x6f2
+ 1155 036a 0A       		.uleb128 0xa
+ 1156 036b 2A000000 		.4byte	.LVL43
+ 1157 036f 08070000 		.4byte	0x708
+ 1158 0373 0A       		.uleb128 0xa
+ 1159 0374 32000000 		.4byte	.LVL44
+ 1160 0378 13070000 		.4byte	0x713
+ 1161 037c 00       		.byte	0
+ 1162 037d 10       		.uleb128 0x10
+ 1163 037e AB010000 		.4byte	.LASF23
+ 1164 0382 01       		.byte	0x1
+ 1165 0383 72       		.byte	0x72
+ 1166 0384 00000000 		.4byte	.LFB69
+ 1167 0388 7C000000 		.4byte	.LFE69-.LFB69
+ 1168 038c 01       		.uleb128 0x1
+ 1169 038d 9C       		.byte	0x9c
+ 1170 038e 41040000 		.4byte	0x441
+ 1171 0392 0B       		.uleb128 0xb
+ 1172 0393 08000000 		.4byte	.LVL59
+ 1173 0397 25010000 		.4byte	0x125
+ 1174 039b A6030000 		.4byte	0x3a6
+ 1175 039f 0C       		.uleb128 0xc
+ 1176 03a0 01       		.uleb128 0x1
+ 1177 03a1 50       		.byte	0x50
+ 1178 03a2 02       		.uleb128 0x2
+ 1179 03a3 08       		.byte	0x8
+ 1180 03a4 33       		.byte	0x33
+ 1181 03a5 00       		.byte	0
+ 1182 03a6 0B       		.uleb128 0xb
+ 1183 03a7 10000000 		.4byte	.LVL60
+ 1184 03ab 25010000 		.4byte	0x125
+ 1185 03af BA030000 		.4byte	0x3ba
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 25
+
+
+ 1186 03b3 0C       		.uleb128 0xc
+ 1187 03b4 01       		.uleb128 0x1
+ 1188 03b5 50       		.byte	0x50
+ 1189 03b6 02       		.uleb128 0x2
+ 1190 03b7 08       		.byte	0x8
+ 1191 03b8 32       		.byte	0x32
+ 1192 03b9 00       		.byte	0
+ 1193 03ba 0B       		.uleb128 0xb
+ 1194 03bb 22000000 		.4byte	.LVL62
+ 1195 03bf 25010000 		.4byte	0x125
+ 1196 03c3 CE030000 		.4byte	0x3ce
+ 1197 03c7 0C       		.uleb128 0xc
+ 1198 03c8 01       		.uleb128 0x1
+ 1199 03c9 50       		.byte	0x50
+ 1200 03ca 02       		.uleb128 0x2
+ 1201 03cb 08       		.byte	0x8
+ 1202 03cc 35       		.byte	0x35
+ 1203 03cd 00       		.byte	0
+ 1204 03ce 0B       		.uleb128 0xb
+ 1205 03cf 2A000000 		.4byte	.LVL63
+ 1206 03d3 25010000 		.4byte	0x125
+ 1207 03d7 E2030000 		.4byte	0x3e2
+ 1208 03db 0C       		.uleb128 0xc
+ 1209 03dc 01       		.uleb128 0x1
+ 1210 03dd 50       		.byte	0x50
+ 1211 03de 02       		.uleb128 0x2
+ 1212 03df 08       		.byte	0x8
+ 1213 03e0 34       		.byte	0x34
+ 1214 03e1 00       		.byte	0
+ 1215 03e2 0B       		.uleb128 0xb
+ 1216 03e3 3A000000 		.4byte	.LVL65
+ 1217 03e7 25010000 		.4byte	0x125
+ 1218 03eb F6030000 		.4byte	0x3f6
+ 1219 03ef 0C       		.uleb128 0xc
+ 1220 03f0 01       		.uleb128 0x1
+ 1221 03f1 50       		.byte	0x50
+ 1222 03f2 02       		.uleb128 0x2
+ 1223 03f3 08       		.byte	0x8
+ 1224 03f4 37       		.byte	0x37
+ 1225 03f5 00       		.byte	0
+ 1226 03f6 0B       		.uleb128 0xb
+ 1227 03f7 42000000 		.4byte	.LVL66
+ 1228 03fb 25010000 		.4byte	0x125
+ 1229 03ff 0A040000 		.4byte	0x40a
+ 1230 0403 0C       		.uleb128 0xc
+ 1231 0404 01       		.uleb128 0x1
+ 1232 0405 50       		.byte	0x50
+ 1233 0406 02       		.uleb128 0x2
+ 1234 0407 08       		.byte	0x8
+ 1235 0408 36       		.byte	0x36
+ 1236 0409 00       		.byte	0
+ 1237 040a 0B       		.uleb128 0xb
+ 1238 040b 5A000000 		.4byte	.LVL69
+ 1239 040f BC000000 		.4byte	0xbc
+ 1240 0413 1D040000 		.4byte	0x41d
+ 1241 0417 0C       		.uleb128 0xc
+ 1242 0418 01       		.uleb128 0x1
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 26
+
+
+ 1243 0419 50       		.byte	0x50
+ 1244 041a 01       		.uleb128 0x1
+ 1245 041b 4E       		.byte	0x4e
+ 1246 041c 00       		.byte	0
+ 1247 041d 0B       		.uleb128 0xb
+ 1248 041e 68000000 		.4byte	.LVL71
+ 1249 0422 BC000000 		.4byte	0xbc
+ 1250 0426 30040000 		.4byte	0x430
+ 1251 042a 0C       		.uleb128 0xc
+ 1252 042b 01       		.uleb128 0x1
+ 1253 042c 50       		.byte	0x50
+ 1254 042d 01       		.uleb128 0x1
+ 1255 042e 4F       		.byte	0x4f
+ 1256 042f 00       		.byte	0
+ 1257 0430 0F       		.uleb128 0xf
+ 1258 0431 76000000 		.4byte	.LVL73
+ 1259 0435 BC000000 		.4byte	0xbc
+ 1260 0439 0C       		.uleb128 0xc
+ 1261 043a 01       		.uleb128 0x1
+ 1262 043b 50       		.byte	0x50
+ 1263 043c 02       		.uleb128 0x2
+ 1264 043d 08       		.byte	0x8
+ 1265 043e 20       		.byte	0x20
+ 1266 043f 00       		.byte	0
+ 1267 0440 00       		.byte	0
+ 1268 0441 15       		.uleb128 0x15
+ 1269 0442 D3010000 		.4byte	.LASF25
+ 1270 0446 01       		.byte	0x1
+ 1271 0447 7D       		.byte	0x7d
+ 1272 0448 68000000 		.4byte	0x68
+ 1273 044c 00000000 		.4byte	.LFB70
+ 1274 0450 FC000000 		.4byte	.LFE70-.LFB70
+ 1275 0454 01       		.uleb128 0x1
+ 1276 0455 9C       		.byte	0x9c
+ 1277 0456 04060000 		.4byte	0x604
+ 1278 045a 0A       		.uleb128 0xa
+ 1279 045b 08000000 		.4byte	.LVL74
+ 1280 045f 29070000 		.4byte	0x729
+ 1281 0463 0A       		.uleb128 0xa
+ 1282 0464 0C000000 		.4byte	.LVL75
+ 1283 0468 34070000 		.4byte	0x734
+ 1284 046c 0A       		.uleb128 0xa
+ 1285 046d 10000000 		.4byte	.LVL76
+ 1286 0471 3F070000 		.4byte	0x73f
+ 1287 0475 0A       		.uleb128 0xa
+ 1288 0476 14000000 		.4byte	.LVL77
+ 1289 047a C8010000 		.4byte	0x1c8
+ 1290 047e 0B       		.uleb128 0xb
+ 1291 047f 1A000000 		.4byte	.LVL78
+ 1292 0483 4A070000 		.4byte	0x74a
+ 1293 0487 95040000 		.4byte	0x495
+ 1294 048b 0C       		.uleb128 0xc
+ 1295 048c 01       		.uleb128 0x1
+ 1296 048d 50       		.byte	0x50
+ 1297 048e 05       		.uleb128 0x5
+ 1298 048f 03       		.byte	0x3
+ 1299 0490 00000000 		.4byte	.LC0
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 27
+
+
+ 1300 0494 00       		.byte	0
+ 1301 0495 0B       		.uleb128 0xb
+ 1302 0496 20000000 		.4byte	.LVL79
+ 1303 049a 4A070000 		.4byte	0x74a
+ 1304 049e AC040000 		.4byte	0x4ac
+ 1305 04a2 0C       		.uleb128 0xc
+ 1306 04a3 01       		.uleb128 0x1
+ 1307 04a4 50       		.byte	0x50
+ 1308 04a5 05       		.uleb128 0x5
+ 1309 04a6 03       		.byte	0x3
+ 1310 04a7 10000000 		.4byte	.LC1
+ 1311 04ab 00       		.byte	0
+ 1312 04ac 0A       		.uleb128 0xa
+ 1313 04ad 24000000 		.4byte	.LVL80
+ 1314 04b1 4B020000 		.4byte	0x24b
+ 1315 04b5 0B       		.uleb128 0xb
+ 1316 04b6 34000000 		.4byte	.LVL81
+ 1317 04ba 55070000 		.4byte	0x755
+ 1318 04be D2040000 		.4byte	0x4d2
+ 1319 04c2 0C       		.uleb128 0xc
+ 1320 04c3 01       		.uleb128 0x1
+ 1321 04c4 50       		.byte	0x50
+ 1322 04c5 02       		.uleb128 0x2
+ 1323 04c6 74       		.byte	0x74
+ 1324 04c7 00       		.sleb128 0
+ 1325 04c8 0C       		.uleb128 0xc
+ 1326 04c9 01       		.uleb128 0x1
+ 1327 04ca 51       		.byte	0x51
+ 1328 04cb 05       		.uleb128 0x5
+ 1329 04cc 03       		.byte	0x3
+ 1330 04cd 14000000 		.4byte	.LC2
+ 1331 04d1 00       		.byte	0
+ 1332 04d2 0B       		.uleb128 0xb
+ 1333 04d3 3A000000 		.4byte	.LVL82
+ 1334 04d7 4A070000 		.4byte	0x74a
+ 1335 04db E6040000 		.4byte	0x4e6
+ 1336 04df 0C       		.uleb128 0xc
+ 1337 04e0 01       		.uleb128 0x1
+ 1338 04e1 50       		.byte	0x50
+ 1339 04e2 02       		.uleb128 0x2
+ 1340 04e3 74       		.byte	0x74
+ 1341 04e4 00       		.sleb128 0
+ 1342 04e5 00       		.byte	0
+ 1343 04e6 0B       		.uleb128 0xb
+ 1344 04e7 48000000 		.4byte	.LVL83
+ 1345 04eb 55070000 		.4byte	0x755
+ 1346 04ef 03050000 		.4byte	0x503
+ 1347 04f3 0C       		.uleb128 0xc
+ 1348 04f4 01       		.uleb128 0x1
+ 1349 04f5 50       		.byte	0x50
+ 1350 04f6 02       		.uleb128 0x2
+ 1351 04f7 74       		.byte	0x74
+ 1352 04f8 00       		.sleb128 0
+ 1353 04f9 0C       		.uleb128 0xc
+ 1354 04fa 01       		.uleb128 0x1
+ 1355 04fb 51       		.byte	0x51
+ 1356 04fc 05       		.uleb128 0x5
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 28
+
+
+ 1357 04fd 03       		.byte	0x3
+ 1358 04fe 20000000 		.4byte	.LC3
+ 1359 0502 00       		.byte	0
+ 1360 0503 0B       		.uleb128 0xb
+ 1361 0504 4E000000 		.4byte	.LVL84
+ 1362 0508 4A070000 		.4byte	0x74a
+ 1363 050c 17050000 		.4byte	0x517
+ 1364 0510 0C       		.uleb128 0xc
+ 1365 0511 01       		.uleb128 0x1
+ 1366 0512 50       		.byte	0x50
+ 1367 0513 02       		.uleb128 0x2
+ 1368 0514 74       		.byte	0x74
+ 1369 0515 00       		.sleb128 0
+ 1370 0516 00       		.byte	0
+ 1371 0517 0B       		.uleb128 0xb
+ 1372 0518 5C000000 		.4byte	.LVL85
+ 1373 051c 55070000 		.4byte	0x755
+ 1374 0520 34050000 		.4byte	0x534
+ 1375 0524 0C       		.uleb128 0xc
+ 1376 0525 01       		.uleb128 0x1
+ 1377 0526 50       		.byte	0x50
+ 1378 0527 02       		.uleb128 0x2
+ 1379 0528 74       		.byte	0x74
+ 1380 0529 00       		.sleb128 0
+ 1381 052a 0C       		.uleb128 0xc
+ 1382 052b 01       		.uleb128 0x1
+ 1383 052c 51       		.byte	0x51
+ 1384 052d 05       		.uleb128 0x5
+ 1385 052e 03       		.byte	0x3
+ 1386 052f 2C000000 		.4byte	.LC4
+ 1387 0533 00       		.byte	0
+ 1388 0534 0B       		.uleb128 0xb
+ 1389 0535 62000000 		.4byte	.LVL86
+ 1390 0539 4A070000 		.4byte	0x74a
+ 1391 053d 48050000 		.4byte	0x548
+ 1392 0541 0C       		.uleb128 0xc
+ 1393 0542 01       		.uleb128 0x1
+ 1394 0543 50       		.byte	0x50
+ 1395 0544 02       		.uleb128 0x2
+ 1396 0545 74       		.byte	0x74
+ 1397 0546 00       		.sleb128 0
+ 1398 0547 00       		.byte	0
+ 1399 0548 0B       		.uleb128 0xb
+ 1400 0549 76000000 		.4byte	.LVL88
+ 1401 054d 55070000 		.4byte	0x755
+ 1402 0551 65050000 		.4byte	0x565
+ 1403 0555 0C       		.uleb128 0xc
+ 1404 0556 01       		.uleb128 0x1
+ 1405 0557 50       		.byte	0x50
+ 1406 0558 02       		.uleb128 0x2
+ 1407 0559 74       		.byte	0x74
+ 1408 055a 00       		.sleb128 0
+ 1409 055b 0C       		.uleb128 0xc
+ 1410 055c 01       		.uleb128 0x1
+ 1411 055d 51       		.byte	0x51
+ 1412 055e 05       		.uleb128 0x5
+ 1413 055f 03       		.byte	0x3
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 29
+
+
+ 1414 0560 38000000 		.4byte	.LC5
+ 1415 0564 00       		.byte	0
+ 1416 0565 0B       		.uleb128 0xb
+ 1417 0566 7C000000 		.4byte	.LVL89
+ 1418 056a 4A070000 		.4byte	0x74a
+ 1419 056e 79050000 		.4byte	0x579
+ 1420 0572 0C       		.uleb128 0xc
+ 1421 0573 01       		.uleb128 0x1
+ 1422 0574 50       		.byte	0x50
+ 1423 0575 02       		.uleb128 0x2
+ 1424 0576 74       		.byte	0x74
+ 1425 0577 00       		.sleb128 0
+ 1426 0578 00       		.byte	0
+ 1427 0579 0B       		.uleb128 0xb
+ 1428 057a 90000000 		.4byte	.LVL91
+ 1429 057e 55070000 		.4byte	0x755
+ 1430 0582 96050000 		.4byte	0x596
+ 1431 0586 0C       		.uleb128 0xc
+ 1432 0587 01       		.uleb128 0x1
+ 1433 0588 50       		.byte	0x50
+ 1434 0589 02       		.uleb128 0x2
+ 1435 058a 74       		.byte	0x74
+ 1436 058b 00       		.sleb128 0
+ 1437 058c 0C       		.uleb128 0xc
+ 1438 058d 01       		.uleb128 0x1
+ 1439 058e 51       		.byte	0x51
+ 1440 058f 05       		.uleb128 0x5
+ 1441 0590 03       		.byte	0x3
+ 1442 0591 44000000 		.4byte	.LC6
+ 1443 0595 00       		.byte	0
+ 1444 0596 0B       		.uleb128 0xb
+ 1445 0597 96000000 		.4byte	.LVL92
+ 1446 059b 4A070000 		.4byte	0x74a
+ 1447 059f AA050000 		.4byte	0x5aa
+ 1448 05a3 0C       		.uleb128 0xc
+ 1449 05a4 01       		.uleb128 0x1
+ 1450 05a5 50       		.byte	0x50
+ 1451 05a6 02       		.uleb128 0x2
+ 1452 05a7 74       		.byte	0x74
+ 1453 05a8 00       		.sleb128 0
+ 1454 05a9 00       		.byte	0
+ 1455 05aa 0B       		.uleb128 0xb
+ 1456 05ab AA000000 		.4byte	.LVL94
+ 1457 05af 55070000 		.4byte	0x755
+ 1458 05b3 C7050000 		.4byte	0x5c7
+ 1459 05b7 0C       		.uleb128 0xc
+ 1460 05b8 01       		.uleb128 0x1
+ 1461 05b9 50       		.byte	0x50
+ 1462 05ba 02       		.uleb128 0x2
+ 1463 05bb 74       		.byte	0x74
+ 1464 05bc 00       		.sleb128 0
+ 1465 05bd 0C       		.uleb128 0xc
+ 1466 05be 01       		.uleb128 0x1
+ 1467 05bf 51       		.byte	0x51
+ 1468 05c0 05       		.uleb128 0x5
+ 1469 05c1 03       		.byte	0x3
+ 1470 05c2 50000000 		.4byte	.LC7
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 30
+
+
+ 1471 05c6 00       		.byte	0
+ 1472 05c7 0B       		.uleb128 0xb
+ 1473 05c8 B0000000 		.4byte	.LVL95
+ 1474 05cc 4A070000 		.4byte	0x74a
+ 1475 05d0 DB050000 		.4byte	0x5db
+ 1476 05d4 0C       		.uleb128 0xc
+ 1477 05d5 01       		.uleb128 0x1
+ 1478 05d6 50       		.byte	0x50
+ 1479 05d7 02       		.uleb128 0x2
+ 1480 05d8 74       		.byte	0x74
+ 1481 05d9 00       		.sleb128 0
+ 1482 05da 00       		.byte	0
+ 1483 05db 0B       		.uleb128 0xb
+ 1484 05dc B6000000 		.4byte	.LVL96
+ 1485 05e0 4A070000 		.4byte	0x74a
+ 1486 05e4 F2050000 		.4byte	0x5f2
+ 1487 05e8 0C       		.uleb128 0xc
+ 1488 05e9 01       		.uleb128 0x1
+ 1489 05ea 50       		.byte	0x50
+ 1490 05eb 05       		.uleb128 0x5
+ 1491 05ec 03       		.byte	0x3
+ 1492 05ed 10000000 		.4byte	.LC1
+ 1493 05f1 00       		.byte	0
+ 1494 05f2 0F       		.uleb128 0xf
+ 1495 05f3 BE000000 		.4byte	.LVL97
+ 1496 05f7 1E070000 		.4byte	0x71e
+ 1497 05fb 0C       		.uleb128 0xc
+ 1498 05fc 01       		.uleb128 0x1
+ 1499 05fd 50       		.byte	0x50
+ 1500 05fe 03       		.uleb128 0x3
+ 1501 05ff 0A       		.byte	0xa
+ 1502 0600 F401     		.2byte	0x1f4
+ 1503 0602 00       		.byte	0
+ 1504 0603 00       		.byte	0
+ 1505 0604 16       		.uleb128 0x16
+ 1506 0605 55010000 		.4byte	.LASF26
+ 1507 0609 05       		.byte	0x5
+ 1508 060a 1207     		.2byte	0x712
+ 1509 060c 10060000 		.4byte	0x610
+ 1510 0610 17       		.uleb128 0x17
+ 1511 0611 76000000 		.4byte	0x76
+ 1512 0615 18       		.uleb128 0x18
+ 1513 0616 71020000 		.4byte	.LASF27
+ 1514 061a 01       		.byte	0x1
+ 1515 061b 24       		.byte	0x24
+ 1516 061c 99000000 		.4byte	0x99
+ 1517 0620 05       		.uleb128 0x5
+ 1518 0621 03       		.byte	0x3
+ 1519 0622 00000000 		.4byte	cal_X
+ 1520 0626 18       		.uleb128 0x18
+ 1521 0627 77020000 		.4byte	.LASF28
+ 1522 062b 01       		.byte	0x1
+ 1523 062c 24       		.byte	0x24
+ 1524 062d 99000000 		.4byte	0x99
+ 1525 0631 05       		.uleb128 0x5
+ 1526 0632 03       		.byte	0x3
+ 1527 0633 00000000 		.4byte	cal_Y
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 31
+
+
+ 1528 0637 18       		.uleb128 0x18
+ 1529 0638 7D020000 		.4byte	.LASF29
+ 1530 063c 01       		.byte	0x1
+ 1531 063d 24       		.byte	0x24
+ 1532 063e 99000000 		.4byte	0x99
+ 1533 0642 05       		.uleb128 0x5
+ 1534 0643 03       		.byte	0x3
+ 1535 0644 00000000 		.4byte	cal_Z
+ 1536 0648 19       		.uleb128 0x19
+ 1537 0649 7800     		.ascii	"x\000"
+ 1538 064b 01       		.byte	0x1
+ 1539 064c 25       		.byte	0x25
+ 1540 064d 8D000000 		.4byte	0x8d
+ 1541 0651 05       		.uleb128 0x5
+ 1542 0652 03       		.byte	0x3
+ 1543 0653 00000000 		.4byte	x
+ 1544 0657 19       		.uleb128 0x19
+ 1545 0658 7900     		.ascii	"y\000"
+ 1546 065a 01       		.byte	0x1
+ 1547 065b 25       		.byte	0x25
+ 1548 065c 8D000000 		.4byte	0x8d
+ 1549 0660 05       		.uleb128 0x5
+ 1550 0661 03       		.byte	0x3
+ 1551 0662 00000000 		.4byte	y
+ 1552 0666 19       		.uleb128 0x19
+ 1553 0667 7A00     		.ascii	"z\000"
+ 1554 0669 01       		.byte	0x1
+ 1555 066a 25       		.byte	0x25
+ 1556 066b 8D000000 		.4byte	0x8d
+ 1557 066f 05       		.uleb128 0x5
+ 1558 0670 03       		.byte	0x3
+ 1559 0671 00000000 		.4byte	z
+ 1560 0675 19       		.uleb128 0x19
+ 1561 0676 786700   		.ascii	"xg\000"
+ 1562 0679 01       		.byte	0x1
+ 1563 067a 26       		.byte	0x26
+ 1564 067b 99000000 		.4byte	0x99
+ 1565 067f 05       		.uleb128 0x5
+ 1566 0680 03       		.byte	0x3
+ 1567 0681 00000000 		.4byte	xg
+ 1568 0685 19       		.uleb128 0x19
+ 1569 0686 796700   		.ascii	"yg\000"
+ 1570 0689 01       		.byte	0x1
+ 1571 068a 26       		.byte	0x26
+ 1572 068b 99000000 		.4byte	0x99
+ 1573 068f 05       		.uleb128 0x5
+ 1574 0690 03       		.byte	0x3
+ 1575 0691 00000000 		.4byte	yg
+ 1576 0695 19       		.uleb128 0x19
+ 1577 0696 7A6700   		.ascii	"zg\000"
+ 1578 0699 01       		.byte	0x1
+ 1579 069a 26       		.byte	0x26
+ 1580 069b 99000000 		.4byte	0x99
+ 1581 069f 05       		.uleb128 0x5
+ 1582 06a0 03       		.byte	0x3
+ 1583 06a1 00000000 		.4byte	zg
+ 1584 06a5 1A       		.uleb128 0x1a
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 32
+
+
+ 1585 06a6 A7000000 		.4byte	0xa7
+ 1586 06aa B5060000 		.4byte	0x6b5
+ 1587 06ae 1B       		.uleb128 0x1b
+ 1588 06af B5000000 		.4byte	0xb5
+ 1589 06b3 31       		.byte	0x31
+ 1590 06b4 00       		.byte	0
+ 1591 06b5 18       		.uleb128 0x18
+ 1592 06b6 4F020000 		.4byte	.LASF30
+ 1593 06ba 01       		.byte	0x1
+ 1594 06bb 27       		.byte	0x27
+ 1595 06bc A5060000 		.4byte	0x6a5
+ 1596 06c0 05       		.uleb128 0x5
+ 1597 06c1 03       		.byte	0x3
+ 1598 06c2 00000000 		.4byte	buffer
+ 1599 06c6 1A       		.uleb128 0x1a
+ 1600 06c7 A7000000 		.4byte	0xa7
+ 1601 06cb D6060000 		.4byte	0x6d6
+ 1602 06cf 1B       		.uleb128 0x1b
+ 1603 06d0 B5000000 		.4byte	0xb5
+ 1604 06d4 05       		.byte	0x5
+ 1605 06d5 00       		.byte	0
+ 1606 06d6 19       		.uleb128 0x19
+ 1607 06d7 72617700 		.ascii	"raw\000"
+ 1608 06db 01       		.byte	0x1
+ 1609 06dc 28       		.byte	0x28
+ 1610 06dd C6060000 		.4byte	0x6c6
+ 1611 06e1 05       		.uleb128 0x5
+ 1612 06e2 03       		.byte	0x3
+ 1613 06e3 00000000 		.4byte	raw
+ 1614 06e7 1C       		.uleb128 0x1c
+ 1615 06e8 12000000 		.4byte	.LASF31
+ 1616 06ec 12000000 		.4byte	.LASF31
+ 1617 06f0 06       		.byte	0x6
+ 1618 06f1 5E       		.byte	0x5e
+ 1619 06f2 1C       		.uleb128 0x1c
+ 1620 06f3 00000000 		.4byte	.LASF32
+ 1621 06f7 00000000 		.4byte	.LASF32
+ 1622 06fb 06       		.byte	0x6
+ 1623 06fc 5C       		.byte	0x5c
+ 1624 06fd 1C       		.uleb128 0x1c
+ 1625 06fe 7A000000 		.4byte	.LASF33
+ 1626 0702 7A000000 		.4byte	.LASF33
+ 1627 0706 06       		.byte	0x6
+ 1628 0707 64       		.byte	0x64
+ 1629 0708 1C       		.uleb128 0x1c
+ 1630 0709 BE010000 		.4byte	.LASF34
+ 1631 070d BE010000 		.4byte	.LASF34
+ 1632 0711 06       		.byte	0x6
+ 1633 0712 62       		.byte	0x62
+ 1634 0713 1C       		.uleb128 0x1c
+ 1635 0714 62010000 		.4byte	.LASF35
+ 1636 0718 62010000 		.4byte	.LASF35
+ 1637 071c 06       		.byte	0x6
+ 1638 071d 60       		.byte	0x60
+ 1639 071e 1C       		.uleb128 0x1c
+ 1640 071f A6020000 		.4byte	.LASF36
+ 1641 0723 A6020000 		.4byte	.LASF36
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 33
+
+
+ 1642 0727 07       		.byte	0x7
+ 1643 0728 76       		.byte	0x76
+ 1644 0729 1C       		.uleb128 0x1c
+ 1645 072a 40000000 		.4byte	.LASF37
+ 1646 072e 40000000 		.4byte	.LASF37
+ 1647 0732 06       		.byte	0x6
+ 1648 0733 4D       		.byte	0x4d
+ 1649 0734 1C       		.uleb128 0x1c
+ 1650 0735 5C020000 		.4byte	.LASF38
+ 1651 0739 5C020000 		.4byte	.LASF38
+ 1652 073d 08       		.byte	0x8
+ 1653 073e 27       		.byte	0x27
+ 1654 073f 1C       		.uleb128 0x1c
+ 1655 0740 4A010000 		.4byte	.LASF39
+ 1656 0744 4A010000 		.4byte	.LASF39
+ 1657 0748 09       		.byte	0x9
+ 1658 0749 54       		.byte	0x54
+ 1659 074a 1C       		.uleb128 0x1c
+ 1660 074b 8F020000 		.4byte	.LASF40
+ 1661 074f 8F020000 		.4byte	.LASF40
+ 1662 0753 09       		.byte	0x9
+ 1663 0754 8B       		.byte	0x8b
+ 1664 0755 1C       		.uleb128 0x1c
+ 1665 0756 9E020000 		.4byte	.LASF41
+ 1666 075a 9E020000 		.4byte	.LASF41
+ 1667 075e 0A       		.byte	0xa
+ 1668 075f E7       		.byte	0xe7
+ 1669 0760 00       		.byte	0
+ 1670              		.section	.debug_abbrev,"",%progbits
+ 1671              	.Ldebug_abbrev0:
+ 1672 0000 01       		.uleb128 0x1
+ 1673 0001 11       		.uleb128 0x11
+ 1674 0002 01       		.byte	0x1
+ 1675 0003 25       		.uleb128 0x25
+ 1676 0004 0E       		.uleb128 0xe
+ 1677 0005 13       		.uleb128 0x13
+ 1678 0006 0B       		.uleb128 0xb
+ 1679 0007 03       		.uleb128 0x3
+ 1680 0008 0E       		.uleb128 0xe
+ 1681 0009 1B       		.uleb128 0x1b
+ 1682 000a 0E       		.uleb128 0xe
+ 1683 000b 55       		.uleb128 0x55
+ 1684 000c 17       		.uleb128 0x17
+ 1685 000d 11       		.uleb128 0x11
+ 1686 000e 01       		.uleb128 0x1
+ 1687 000f 10       		.uleb128 0x10
+ 1688 0010 17       		.uleb128 0x17
+ 1689 0011 00       		.byte	0
+ 1690 0012 00       		.byte	0
+ 1691 0013 02       		.uleb128 0x2
+ 1692 0014 24       		.uleb128 0x24
+ 1693 0015 00       		.byte	0
+ 1694 0016 0B       		.uleb128 0xb
+ 1695 0017 0B       		.uleb128 0xb
+ 1696 0018 3E       		.uleb128 0x3e
+ 1697 0019 0B       		.uleb128 0xb
+ 1698 001a 03       		.uleb128 0x3
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 34
+
+
+ 1699 001b 0E       		.uleb128 0xe
+ 1700 001c 00       		.byte	0
+ 1701 001d 00       		.byte	0
+ 1702 001e 03       		.uleb128 0x3
+ 1703 001f 16       		.uleb128 0x16
+ 1704 0020 00       		.byte	0
+ 1705 0021 03       		.uleb128 0x3
+ 1706 0022 0E       		.uleb128 0xe
+ 1707 0023 3A       		.uleb128 0x3a
+ 1708 0024 0B       		.uleb128 0xb
+ 1709 0025 3B       		.uleb128 0x3b
+ 1710 0026 0B       		.uleb128 0xb
+ 1711 0027 49       		.uleb128 0x49
+ 1712 0028 13       		.uleb128 0x13
+ 1713 0029 00       		.byte	0
+ 1714 002a 00       		.byte	0
+ 1715 002b 04       		.uleb128 0x4
+ 1716 002c 24       		.uleb128 0x24
+ 1717 002d 00       		.byte	0
+ 1718 002e 0B       		.uleb128 0xb
+ 1719 002f 0B       		.uleb128 0xb
+ 1720 0030 3E       		.uleb128 0x3e
+ 1721 0031 0B       		.uleb128 0xb
+ 1722 0032 03       		.uleb128 0x3
+ 1723 0033 08       		.uleb128 0x8
+ 1724 0034 00       		.byte	0
+ 1725 0035 00       		.byte	0
+ 1726 0036 05       		.uleb128 0x5
+ 1727 0037 16       		.uleb128 0x16
+ 1728 0038 00       		.byte	0
+ 1729 0039 03       		.uleb128 0x3
+ 1730 003a 0E       		.uleb128 0xe
+ 1731 003b 3A       		.uleb128 0x3a
+ 1732 003c 0B       		.uleb128 0xb
+ 1733 003d 3B       		.uleb128 0x3b
+ 1734 003e 05       		.uleb128 0x5
+ 1735 003f 49       		.uleb128 0x49
+ 1736 0040 13       		.uleb128 0x13
+ 1737 0041 00       		.byte	0
+ 1738 0042 00       		.byte	0
+ 1739 0043 06       		.uleb128 0x6
+ 1740 0044 2E       		.uleb128 0x2e
+ 1741 0045 01       		.byte	0x1
+ 1742 0046 3F       		.uleb128 0x3f
+ 1743 0047 19       		.uleb128 0x19
+ 1744 0048 03       		.uleb128 0x3
+ 1745 0049 0E       		.uleb128 0xe
+ 1746 004a 3A       		.uleb128 0x3a
+ 1747 004b 0B       		.uleb128 0xb
+ 1748 004c 3B       		.uleb128 0x3b
+ 1749 004d 0B       		.uleb128 0xb
+ 1750 004e 27       		.uleb128 0x27
+ 1751 004f 19       		.uleb128 0x19
+ 1752 0050 11       		.uleb128 0x11
+ 1753 0051 01       		.uleb128 0x1
+ 1754 0052 12       		.uleb128 0x12
+ 1755 0053 06       		.uleb128 0x6
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 35
+
+
+ 1756 0054 40       		.uleb128 0x40
+ 1757 0055 18       		.uleb128 0x18
+ 1758 0056 9742     		.uleb128 0x2117
+ 1759 0058 19       		.uleb128 0x19
+ 1760 0059 01       		.uleb128 0x1
+ 1761 005a 13       		.uleb128 0x13
+ 1762 005b 00       		.byte	0
+ 1763 005c 00       		.byte	0
+ 1764 005d 07       		.uleb128 0x7
+ 1765 005e 05       		.uleb128 0x5
+ 1766 005f 00       		.byte	0
+ 1767 0060 03       		.uleb128 0x3
+ 1768 0061 08       		.uleb128 0x8
+ 1769 0062 3A       		.uleb128 0x3a
+ 1770 0063 0B       		.uleb128 0xb
+ 1771 0064 3B       		.uleb128 0x3b
+ 1772 0065 0B       		.uleb128 0xb
+ 1773 0066 49       		.uleb128 0x49
+ 1774 0067 13       		.uleb128 0x13
+ 1775 0068 02       		.uleb128 0x2
+ 1776 0069 17       		.uleb128 0x17
+ 1777 006a 00       		.byte	0
+ 1778 006b 00       		.byte	0
+ 1779 006c 08       		.uleb128 0x8
+ 1780 006d 05       		.uleb128 0x5
+ 1781 006e 00       		.byte	0
+ 1782 006f 03       		.uleb128 0x3
+ 1783 0070 0E       		.uleb128 0xe
+ 1784 0071 3A       		.uleb128 0x3a
+ 1785 0072 0B       		.uleb128 0xb
+ 1786 0073 3B       		.uleb128 0x3b
+ 1787 0074 0B       		.uleb128 0xb
+ 1788 0075 49       		.uleb128 0x49
+ 1789 0076 13       		.uleb128 0x13
+ 1790 0077 02       		.uleb128 0x2
+ 1791 0078 17       		.uleb128 0x17
+ 1792 0079 00       		.byte	0
+ 1793 007a 00       		.byte	0
+ 1794 007b 09       		.uleb128 0x9
+ 1795 007c 34       		.uleb128 0x34
+ 1796 007d 00       		.byte	0
+ 1797 007e 03       		.uleb128 0x3
+ 1798 007f 0E       		.uleb128 0xe
+ 1799 0080 3A       		.uleb128 0x3a
+ 1800 0081 0B       		.uleb128 0xb
+ 1801 0082 3B       		.uleb128 0x3b
+ 1802 0083 0B       		.uleb128 0xb
+ 1803 0084 49       		.uleb128 0x49
+ 1804 0085 13       		.uleb128 0x13
+ 1805 0086 02       		.uleb128 0x2
+ 1806 0087 17       		.uleb128 0x17
+ 1807 0088 00       		.byte	0
+ 1808 0089 00       		.byte	0
+ 1809 008a 0A       		.uleb128 0xa
+ 1810 008b 898201   		.uleb128 0x4109
+ 1811 008e 00       		.byte	0
+ 1812 008f 11       		.uleb128 0x11
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 36
+
+
+ 1813 0090 01       		.uleb128 0x1
+ 1814 0091 31       		.uleb128 0x31
+ 1815 0092 13       		.uleb128 0x13
+ 1816 0093 00       		.byte	0
+ 1817 0094 00       		.byte	0
+ 1818 0095 0B       		.uleb128 0xb
+ 1819 0096 898201   		.uleb128 0x4109
+ 1820 0099 01       		.byte	0x1
+ 1821 009a 11       		.uleb128 0x11
+ 1822 009b 01       		.uleb128 0x1
+ 1823 009c 31       		.uleb128 0x31
+ 1824 009d 13       		.uleb128 0x13
+ 1825 009e 01       		.uleb128 0x1
+ 1826 009f 13       		.uleb128 0x13
+ 1827 00a0 00       		.byte	0
+ 1828 00a1 00       		.byte	0
+ 1829 00a2 0C       		.uleb128 0xc
+ 1830 00a3 8A8201   		.uleb128 0x410a
+ 1831 00a6 00       		.byte	0
+ 1832 00a7 02       		.uleb128 0x2
+ 1833 00a8 18       		.uleb128 0x18
+ 1834 00a9 9142     		.uleb128 0x2111
+ 1835 00ab 18       		.uleb128 0x18
+ 1836 00ac 00       		.byte	0
+ 1837 00ad 00       		.byte	0
+ 1838 00ae 0D       		.uleb128 0xd
+ 1839 00af 2E       		.uleb128 0x2e
+ 1840 00b0 01       		.byte	0x1
+ 1841 00b1 3F       		.uleb128 0x3f
+ 1842 00b2 19       		.uleb128 0x19
+ 1843 00b3 03       		.uleb128 0x3
+ 1844 00b4 0E       		.uleb128 0xe
+ 1845 00b5 3A       		.uleb128 0x3a
+ 1846 00b6 0B       		.uleb128 0xb
+ 1847 00b7 3B       		.uleb128 0x3b
+ 1848 00b8 0B       		.uleb128 0xb
+ 1849 00b9 27       		.uleb128 0x27
+ 1850 00ba 19       		.uleb128 0x19
+ 1851 00bb 49       		.uleb128 0x49
+ 1852 00bc 13       		.uleb128 0x13
+ 1853 00bd 11       		.uleb128 0x11
+ 1854 00be 01       		.uleb128 0x1
+ 1855 00bf 12       		.uleb128 0x12
+ 1856 00c0 06       		.uleb128 0x6
+ 1857 00c1 40       		.uleb128 0x40
+ 1858 00c2 18       		.uleb128 0x18
+ 1859 00c3 9742     		.uleb128 0x2117
+ 1860 00c5 19       		.uleb128 0x19
+ 1861 00c6 01       		.uleb128 0x1
+ 1862 00c7 13       		.uleb128 0x13
+ 1863 00c8 00       		.byte	0
+ 1864 00c9 00       		.byte	0
+ 1865 00ca 0E       		.uleb128 0xe
+ 1866 00cb 34       		.uleb128 0x34
+ 1867 00cc 00       		.byte	0
+ 1868 00cd 03       		.uleb128 0x3
+ 1869 00ce 0E       		.uleb128 0xe
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 37
+
+
+ 1870 00cf 3A       		.uleb128 0x3a
+ 1871 00d0 0B       		.uleb128 0xb
+ 1872 00d1 3B       		.uleb128 0x3b
+ 1873 00d2 0B       		.uleb128 0xb
+ 1874 00d3 49       		.uleb128 0x49
+ 1875 00d4 13       		.uleb128 0x13
+ 1876 00d5 02       		.uleb128 0x2
+ 1877 00d6 18       		.uleb128 0x18
+ 1878 00d7 00       		.byte	0
+ 1879 00d8 00       		.byte	0
+ 1880 00d9 0F       		.uleb128 0xf
+ 1881 00da 898201   		.uleb128 0x4109
+ 1882 00dd 01       		.byte	0x1
+ 1883 00de 11       		.uleb128 0x11
+ 1884 00df 01       		.uleb128 0x1
+ 1885 00e0 31       		.uleb128 0x31
+ 1886 00e1 13       		.uleb128 0x13
+ 1887 00e2 00       		.byte	0
+ 1888 00e3 00       		.byte	0
+ 1889 00e4 10       		.uleb128 0x10
+ 1890 00e5 2E       		.uleb128 0x2e
+ 1891 00e6 01       		.byte	0x1
+ 1892 00e7 3F       		.uleb128 0x3f
+ 1893 00e8 19       		.uleb128 0x19
+ 1894 00e9 03       		.uleb128 0x3
+ 1895 00ea 0E       		.uleb128 0xe
+ 1896 00eb 3A       		.uleb128 0x3a
+ 1897 00ec 0B       		.uleb128 0xb
+ 1898 00ed 3B       		.uleb128 0x3b
+ 1899 00ee 0B       		.uleb128 0xb
+ 1900 00ef 27       		.uleb128 0x27
+ 1901 00f0 19       		.uleb128 0x19
+ 1902 00f1 11       		.uleb128 0x11
+ 1903 00f2 01       		.uleb128 0x1
+ 1904 00f3 12       		.uleb128 0x12
+ 1905 00f4 06       		.uleb128 0x6
+ 1906 00f5 40       		.uleb128 0x40
+ 1907 00f6 18       		.uleb128 0x18
+ 1908 00f7 9642     		.uleb128 0x2116
+ 1909 00f9 19       		.uleb128 0x19
+ 1910 00fa 01       		.uleb128 0x1
+ 1911 00fb 13       		.uleb128 0x13
+ 1912 00fc 00       		.byte	0
+ 1913 00fd 00       		.byte	0
+ 1914 00fe 11       		.uleb128 0x11
+ 1915 00ff 2E       		.uleb128 0x2e
+ 1916 0100 01       		.byte	0x1
+ 1917 0101 3F       		.uleb128 0x3f
+ 1918 0102 19       		.uleb128 0x19
+ 1919 0103 03       		.uleb128 0x3
+ 1920 0104 0E       		.uleb128 0xe
+ 1921 0105 3A       		.uleb128 0x3a
+ 1922 0106 0B       		.uleb128 0xb
+ 1923 0107 3B       		.uleb128 0x3b
+ 1924 0108 0B       		.uleb128 0xb
+ 1925 0109 11       		.uleb128 0x11
+ 1926 010a 01       		.uleb128 0x1
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 38
+
+
+ 1927 010b 12       		.uleb128 0x12
+ 1928 010c 06       		.uleb128 0x6
+ 1929 010d 40       		.uleb128 0x40
+ 1930 010e 18       		.uleb128 0x18
+ 1931 010f 9642     		.uleb128 0x2116
+ 1932 0111 19       		.uleb128 0x19
+ 1933 0112 01       		.uleb128 0x1
+ 1934 0113 13       		.uleb128 0x13
+ 1935 0114 00       		.byte	0
+ 1936 0115 00       		.byte	0
+ 1937 0116 12       		.uleb128 0x12
+ 1938 0117 34       		.uleb128 0x34
+ 1939 0118 00       		.byte	0
+ 1940 0119 03       		.uleb128 0x3
+ 1941 011a 0E       		.uleb128 0xe
+ 1942 011b 3A       		.uleb128 0x3a
+ 1943 011c 0B       		.uleb128 0xb
+ 1944 011d 3B       		.uleb128 0x3b
+ 1945 011e 0B       		.uleb128 0xb
+ 1946 011f 49       		.uleb128 0x49
+ 1947 0120 13       		.uleb128 0x13
+ 1948 0121 1C       		.uleb128 0x1c
+ 1949 0122 0D       		.uleb128 0xd
+ 1950 0123 00       		.byte	0
+ 1951 0124 00       		.byte	0
+ 1952 0125 13       		.uleb128 0x13
+ 1953 0126 0B       		.uleb128 0xb
+ 1954 0127 01       		.byte	0x1
+ 1955 0128 11       		.uleb128 0x11
+ 1956 0129 01       		.uleb128 0x1
+ 1957 012a 12       		.uleb128 0x12
+ 1958 012b 06       		.uleb128 0x6
+ 1959 012c 01       		.uleb128 0x1
+ 1960 012d 13       		.uleb128 0x13
+ 1961 012e 00       		.byte	0
+ 1962 012f 00       		.byte	0
+ 1963 0130 14       		.uleb128 0x14
+ 1964 0131 34       		.uleb128 0x34
+ 1965 0132 00       		.byte	0
+ 1966 0133 03       		.uleb128 0x3
+ 1967 0134 08       		.uleb128 0x8
+ 1968 0135 3A       		.uleb128 0x3a
+ 1969 0136 0B       		.uleb128 0xb
+ 1970 0137 3B       		.uleb128 0x3b
+ 1971 0138 0B       		.uleb128 0xb
+ 1972 0139 49       		.uleb128 0x49
+ 1973 013a 13       		.uleb128 0x13
+ 1974 013b 02       		.uleb128 0x2
+ 1975 013c 17       		.uleb128 0x17
+ 1976 013d 00       		.byte	0
+ 1977 013e 00       		.byte	0
+ 1978 013f 15       		.uleb128 0x15
+ 1979 0140 2E       		.uleb128 0x2e
+ 1980 0141 01       		.byte	0x1
+ 1981 0142 3F       		.uleb128 0x3f
+ 1982 0143 19       		.uleb128 0x19
+ 1983 0144 03       		.uleb128 0x3
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 39
+
+
+ 1984 0145 0E       		.uleb128 0xe
+ 1985 0146 3A       		.uleb128 0x3a
+ 1986 0147 0B       		.uleb128 0xb
+ 1987 0148 3B       		.uleb128 0x3b
+ 1988 0149 0B       		.uleb128 0xb
+ 1989 014a 49       		.uleb128 0x49
+ 1990 014b 13       		.uleb128 0x13
+ 1991 014c 8701     		.uleb128 0x87
+ 1992 014e 19       		.uleb128 0x19
+ 1993 014f 11       		.uleb128 0x11
+ 1994 0150 01       		.uleb128 0x1
+ 1995 0151 12       		.uleb128 0x12
+ 1996 0152 06       		.uleb128 0x6
+ 1997 0153 40       		.uleb128 0x40
+ 1998 0154 18       		.uleb128 0x18
+ 1999 0155 9642     		.uleb128 0x2116
+ 2000 0157 19       		.uleb128 0x19
+ 2001 0158 01       		.uleb128 0x1
+ 2002 0159 13       		.uleb128 0x13
+ 2003 015a 00       		.byte	0
+ 2004 015b 00       		.byte	0
+ 2005 015c 16       		.uleb128 0x16
+ 2006 015d 34       		.uleb128 0x34
+ 2007 015e 00       		.byte	0
+ 2008 015f 03       		.uleb128 0x3
+ 2009 0160 0E       		.uleb128 0xe
+ 2010 0161 3A       		.uleb128 0x3a
+ 2011 0162 0B       		.uleb128 0xb
+ 2012 0163 3B       		.uleb128 0x3b
+ 2013 0164 05       		.uleb128 0x5
+ 2014 0165 49       		.uleb128 0x49
+ 2015 0166 13       		.uleb128 0x13
+ 2016 0167 3F       		.uleb128 0x3f
+ 2017 0168 19       		.uleb128 0x19
+ 2018 0169 3C       		.uleb128 0x3c
+ 2019 016a 19       		.uleb128 0x19
+ 2020 016b 00       		.byte	0
+ 2021 016c 00       		.byte	0
+ 2022 016d 17       		.uleb128 0x17
+ 2023 016e 35       		.uleb128 0x35
+ 2024 016f 00       		.byte	0
+ 2025 0170 49       		.uleb128 0x49
+ 2026 0171 13       		.uleb128 0x13
+ 2027 0172 00       		.byte	0
+ 2028 0173 00       		.byte	0
+ 2029 0174 18       		.uleb128 0x18
+ 2030 0175 34       		.uleb128 0x34
+ 2031 0176 00       		.byte	0
+ 2032 0177 03       		.uleb128 0x3
+ 2033 0178 0E       		.uleb128 0xe
+ 2034 0179 3A       		.uleb128 0x3a
+ 2035 017a 0B       		.uleb128 0xb
+ 2036 017b 3B       		.uleb128 0x3b
+ 2037 017c 0B       		.uleb128 0xb
+ 2038 017d 49       		.uleb128 0x49
+ 2039 017e 13       		.uleb128 0x13
+ 2040 017f 3F       		.uleb128 0x3f
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 40
+
+
+ 2041 0180 19       		.uleb128 0x19
+ 2042 0181 02       		.uleb128 0x2
+ 2043 0182 18       		.uleb128 0x18
+ 2044 0183 00       		.byte	0
+ 2045 0184 00       		.byte	0
+ 2046 0185 19       		.uleb128 0x19
+ 2047 0186 34       		.uleb128 0x34
+ 2048 0187 00       		.byte	0
+ 2049 0188 03       		.uleb128 0x3
+ 2050 0189 08       		.uleb128 0x8
+ 2051 018a 3A       		.uleb128 0x3a
+ 2052 018b 0B       		.uleb128 0xb
+ 2053 018c 3B       		.uleb128 0x3b
+ 2054 018d 0B       		.uleb128 0xb
+ 2055 018e 49       		.uleb128 0x49
+ 2056 018f 13       		.uleb128 0x13
+ 2057 0190 3F       		.uleb128 0x3f
+ 2058 0191 19       		.uleb128 0x19
+ 2059 0192 02       		.uleb128 0x2
+ 2060 0193 18       		.uleb128 0x18
+ 2061 0194 00       		.byte	0
+ 2062 0195 00       		.byte	0
+ 2063 0196 1A       		.uleb128 0x1a
+ 2064 0197 01       		.uleb128 0x1
+ 2065 0198 01       		.byte	0x1
+ 2066 0199 49       		.uleb128 0x49
+ 2067 019a 13       		.uleb128 0x13
+ 2068 019b 01       		.uleb128 0x1
+ 2069 019c 13       		.uleb128 0x13
+ 2070 019d 00       		.byte	0
+ 2071 019e 00       		.byte	0
+ 2072 019f 1B       		.uleb128 0x1b
+ 2073 01a0 21       		.uleb128 0x21
+ 2074 01a1 00       		.byte	0
+ 2075 01a2 49       		.uleb128 0x49
+ 2076 01a3 13       		.uleb128 0x13
+ 2077 01a4 2F       		.uleb128 0x2f
+ 2078 01a5 0B       		.uleb128 0xb
+ 2079 01a6 00       		.byte	0
+ 2080 01a7 00       		.byte	0
+ 2081 01a8 1C       		.uleb128 0x1c
+ 2082 01a9 2E       		.uleb128 0x2e
+ 2083 01aa 00       		.byte	0
+ 2084 01ab 3F       		.uleb128 0x3f
+ 2085 01ac 19       		.uleb128 0x19
+ 2086 01ad 3C       		.uleb128 0x3c
+ 2087 01ae 19       		.uleb128 0x19
+ 2088 01af 6E       		.uleb128 0x6e
+ 2089 01b0 0E       		.uleb128 0xe
+ 2090 01b1 03       		.uleb128 0x3
+ 2091 01b2 0E       		.uleb128 0xe
+ 2092 01b3 3A       		.uleb128 0x3a
+ 2093 01b4 0B       		.uleb128 0xb
+ 2094 01b5 3B       		.uleb128 0x3b
+ 2095 01b6 0B       		.uleb128 0xb
+ 2096 01b7 00       		.byte	0
+ 2097 01b8 00       		.byte	0
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 41
+
+
+ 2098 01b9 00       		.byte	0
+ 2099              		.section	.debug_loc,"",%progbits
+ 2100              	.Ldebug_loc0:
+ 2101              	.LLST0:
+ 2102 0000 00000000 		.4byte	.LVL0
+ 2103 0004 07000000 		.4byte	.LVL2-1
+ 2104 0008 0100     		.2byte	0x1
+ 2105 000a 50       		.byte	0x50
+ 2106 000b 07000000 		.4byte	.LVL2-1
+ 2107 000f 1A000000 		.4byte	.LFE64
+ 2108 0013 0400     		.2byte	0x4
+ 2109 0015 F3       		.byte	0xf3
+ 2110 0016 01       		.uleb128 0x1
+ 2111 0017 50       		.byte	0x50
+ 2112 0018 9F       		.byte	0x9f
+ 2113 0019 00000000 		.4byte	0
+ 2114 001d 00000000 		.4byte	0
+ 2115              	.LLST1:
+ 2116 0021 00000000 		.4byte	.LVL0
+ 2117 0025 07000000 		.4byte	.LVL2-1
+ 2118 0029 0100     		.2byte	0x1
+ 2119 002b 51       		.byte	0x51
+ 2120 002c 07000000 		.4byte	.LVL2-1
+ 2121 0030 1A000000 		.4byte	.LFE64
+ 2122 0034 0400     		.2byte	0x4
+ 2123 0036 F3       		.byte	0xf3
+ 2124 0037 01       		.uleb128 0x1
+ 2125 0038 51       		.byte	0x51
+ 2126 0039 9F       		.byte	0x9f
+ 2127 003a 00000000 		.4byte	0
+ 2128 003e 00000000 		.4byte	0
+ 2129              	.LLST2:
+ 2130 0042 04000000 		.4byte	.LVL1
+ 2131 0046 07000000 		.4byte	.LVL2-1
+ 2132 004a 0100     		.2byte	0x1
+ 2133 004c 50       		.byte	0x50
+ 2134 004d 00000000 		.4byte	0
+ 2135 0051 00000000 		.4byte	0
+ 2136              	.LLST3:
+ 2137 0055 00000000 		.4byte	.LVL5
+ 2138 0059 09000000 		.4byte	.LVL7-1
+ 2139 005d 0100     		.2byte	0x1
+ 2140 005f 50       		.byte	0x50
+ 2141 0060 09000000 		.4byte	.LVL7-1
+ 2142 0064 3A000000 		.4byte	.LFE65
+ 2143 0068 0400     		.2byte	0x4
+ 2144 006a F3       		.byte	0xf3
+ 2145 006b 01       		.uleb128 0x1
+ 2146 006c 50       		.byte	0x50
+ 2147 006d 9F       		.byte	0x9f
+ 2148 006e 00000000 		.4byte	0
+ 2149 0072 00000000 		.4byte	0
+ 2150              	.LLST4:
+ 2151 0076 06000000 		.4byte	.LVL6
+ 2152 007a 32000000 		.4byte	.LVL14
+ 2153 007e 0100     		.2byte	0x1
+ 2154 0080 54       		.byte	0x54
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 42
+
+
+ 2155 0081 00000000 		.4byte	0
+ 2156 0085 00000000 		.4byte	0
+ 2157              	.LLST5:
+ 2158 0089 0C000000 		.4byte	.LVL38
+ 2159 008d 10000000 		.4byte	.LVL39
+ 2160 0091 0200     		.2byte	0x2
+ 2161 0093 30       		.byte	0x30
+ 2162 0094 9F       		.byte	0x9f
+ 2163 0095 10000000 		.4byte	.LVL39
+ 2164 0099 34000000 		.4byte	.LVL45
+ 2165 009d 0100     		.2byte	0x1
+ 2166 009f 54       		.byte	0x54
+ 2167 00a0 00000000 		.4byte	0
+ 2168 00a4 00000000 		.4byte	0
+ 2169              	.LLST6:
+ 2170 00a8 32000000 		.4byte	.LVL44
+ 2171 00ac 36000000 		.4byte	.LVL46
+ 2172 00b0 0200     		.2byte	0x2
+ 2173 00b2 30       		.byte	0x30
+ 2174 00b3 9F       		.byte	0x9f
+ 2175 00b4 36000000 		.4byte	.LVL46
+ 2176 00b8 64000000 		.4byte	.LVL49
+ 2177 00bc 0100     		.2byte	0x1
+ 2178 00be 54       		.byte	0x54
+ 2179 00bf 00000000 		.4byte	0
+ 2180 00c3 00000000 		.4byte	0
+ 2181              		.section	.debug_aranges,"",%progbits
+ 2182 0000 4C000000 		.4byte	0x4c
+ 2183 0004 0200     		.2byte	0x2
+ 2184 0006 00000000 		.4byte	.Ldebug_info0
+ 2185 000a 04       		.byte	0x4
+ 2186 000b 00       		.byte	0
+ 2187 000c 0000     		.2byte	0
+ 2188 000e 0000     		.2byte	0
+ 2189 0010 00000000 		.4byte	.LFB64
+ 2190 0014 1A000000 		.4byte	.LFE64-.LFB64
+ 2191 0018 00000000 		.4byte	.LFB65
+ 2192 001c 3A000000 		.4byte	.LFE65-.LFB65
+ 2193 0020 00000000 		.4byte	.LFB66
+ 2194 0024 28000000 		.4byte	.LFE66-.LFB66
+ 2195 0028 00000000 		.4byte	.LFB67
+ 2196 002c A8000000 		.4byte	.LFE67-.LFB67
+ 2197 0030 00000000 		.4byte	.LFB68
+ 2198 0034 D8000000 		.4byte	.LFE68-.LFB68
+ 2199 0038 00000000 		.4byte	.LFB69
+ 2200 003c 7C000000 		.4byte	.LFE69-.LFB69
+ 2201 0040 00000000 		.4byte	.LFB70
+ 2202 0044 FC000000 		.4byte	.LFE70-.LFB70
+ 2203 0048 00000000 		.4byte	0
+ 2204 004c 00000000 		.4byte	0
+ 2205              		.section	.debug_ranges,"",%progbits
+ 2206              	.Ldebug_ranges0:
+ 2207 0000 00000000 		.4byte	.LFB64
+ 2208 0004 1A000000 		.4byte	.LFE64
+ 2209 0008 00000000 		.4byte	.LFB65
+ 2210 000c 3A000000 		.4byte	.LFE65
+ 2211 0010 00000000 		.4byte	.LFB66
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 43
+
+
+ 2212 0014 28000000 		.4byte	.LFE66
+ 2213 0018 00000000 		.4byte	.LFB67
+ 2214 001c A8000000 		.4byte	.LFE67
+ 2215 0020 00000000 		.4byte	.LFB68
+ 2216 0024 D8000000 		.4byte	.LFE68
+ 2217 0028 00000000 		.4byte	.LFB69
+ 2218 002c 7C000000 		.4byte	.LFE69
+ 2219 0030 00000000 		.4byte	.LFB70
+ 2220 0034 FC000000 		.4byte	.LFE70
+ 2221 0038 00000000 		.4byte	0
+ 2222 003c 00000000 		.4byte	0
+ 2223              		.section	.debug_line,"",%progbits
+ 2224              	.Ldebug_line0:
+ 2225 0000 11030000 		.section	.debug_str,"MS",%progbits,1
+ 2225      0200E901 
+ 2225      00000201 
+ 2225      FB0E0D00 
+ 2225      01010101 
+ 2226              	.LASF32:
+ 2227 0000 5350494D 		.ascii	"SPIM_ReadTxStatus\000"
+ 2227      5F526561 
+ 2227      64547853 
+ 2227      74617475 
+ 2227      7300
+ 2228              	.LASF31:
+ 2229 0012 5350494D 		.ascii	"SPIM_WriteTxData\000"
+ 2229      5F577269 
+ 2229      74655478 
+ 2229      44617461 
+ 2229      00
+ 2230              	.LASF9:
+ 2231 0023 5F5F696E 		.ascii	"__int32_t\000"
+ 2231      7433325F 
+ 2231      7400
+ 2232              	.LASF3:
+ 2233 002d 73686F72 		.ascii	"short unsigned int\000"
+ 2233      7420756E 
+ 2233      7369676E 
+ 2233      65642069 
+ 2233      6E7400
+ 2234              	.LASF37:
+ 2235 0040 5350494D 		.ascii	"SPIM_Start\000"
+ 2235      5F537461 
+ 2235      727400
+ 2236              	.LASF21:
+ 2237 004b 4144584C 		.ascii	"ADXL345_Init\000"
+ 2237      3334355F 
+ 2237      496E6974 
+ 2237      00
+ 2238              	.LASF20:
+ 2239 0058 57726974 		.ascii	"Write_SPI\000"
+ 2239      655F5350 
+ 2239      4900
+ 2240              	.LASF10:
+ 2241 0062 696E7433 		.ascii	"int32_t\000"
+ 2241      325F7400 
+ 2242              	.LASF19:
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 44
+
+
+ 2243 006a 61646472 		.ascii	"addr\000"
+ 2243      00
+ 2244              	.LASF13:
+ 2245 006f 666C6F61 		.ascii	"float\000"
+ 2245      7400
+ 2246              	.LASF18:
+ 2247 0075 64617461 		.ascii	"data\000"
+ 2247      00
+ 2248              	.LASF33:
+ 2249 007a 5350494D 		.ascii	"SPIM_ClearRxBuffer\000"
+ 2249      5F436C65 
+ 2249      61725278 
+ 2249      42756666 
+ 2249      657200
+ 2250              	.LASF1:
+ 2251 008d 756E7369 		.ascii	"unsigned char\000"
+ 2251      676E6564 
+ 2251      20636861 
+ 2251      7200
+ 2252              	.LASF42:
+ 2253 009b 474E5520 		.ascii	"GNU C11 5.4.1 20160609 (release) [ARM/embedded-5-br"
+ 2253      43313120 
+ 2253      352E342E 
+ 2253      31203230 
+ 2253      31363036 
+ 2254 00ce 616E6368 		.ascii	"anch revision 237715] -mcpu=cortex-m3 -mthumb -g -O"
+ 2254      20726576 
+ 2254      6973696F 
+ 2254      6E203233 
+ 2254      37373135 
+ 2255 0101 67202D66 		.ascii	"g -ffunction-sections -ffat-lto-objects\000"
+ 2255      66756E63 
+ 2255      74696F6E 
+ 2255      2D736563 
+ 2255      74696F6E 
+ 2256              	.LASF45:
+ 2257 0129 52656164 		.ascii	"Read_XYZ\000"
+ 2257      5F58595A 
+ 2257      00
+ 2258              	.LASF12:
+ 2259 0132 696E7431 		.ascii	"int16\000"
+ 2259      3600
+ 2260              	.LASF5:
+ 2261 0138 6C6F6E67 		.ascii	"long unsigned int\000"
+ 2261      20756E73 
+ 2261      69676E65 
+ 2261      6420696E 
+ 2261      7400
+ 2262              	.LASF39:
+ 2263 014a 55415254 		.ascii	"UART_Start\000"
+ 2263      5F537461 
+ 2263      727400
+ 2264              	.LASF26:
+ 2265 0155 49544D5F 		.ascii	"ITM_RxBuffer\000"
+ 2265      52784275 
+ 2265      66666572 
+ 2265      00
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 45
+
+
+ 2266              	.LASF35:
+ 2267 0162 5350494D 		.ascii	"SPIM_ReadRxData\000"
+ 2267      5F526561 
+ 2267      64527844 
+ 2267      61746100 
+ 2268              	.LASF44:
+ 2269 0172 443A5C50 		.ascii	"D:\\Projects\\PSoC\\PSoC 5\\ADXL345\\ADXL345_SPI.cy"
+ 2269      726F6A65 
+ 2269      6374735C 
+ 2269      50536F43 
+ 2269      5C50536F 
+ 2270 01a0 64736E00 		.ascii	"dsn\000"
+ 2271              	.LASF14:
+ 2272 01a4 646F7562 		.ascii	"double\000"
+ 2272      6C6500
+ 2273              	.LASF23:
+ 2274 01ab 4F666673 		.ascii	"Offset_Calibration\000"
+ 2274      65745F43 
+ 2274      616C6962 
+ 2274      72617469 
+ 2274      6F6E00
+ 2275              	.LASF34:
+ 2276 01be 5350494D 		.ascii	"SPIM_GetRxBufferSize\000"
+ 2276      5F476574 
+ 2276      52784275 
+ 2276      66666572 
+ 2276      53697A65 
+ 2277              	.LASF25:
+ 2278 01d3 6D61696E 		.ascii	"main\000"
+ 2278      00
+ 2279              	.LASF8:
+ 2280 01d8 756E7369 		.ascii	"unsigned int\000"
+ 2280      676E6564 
+ 2280      20696E74 
+ 2280      00
+ 2281              	.LASF7:
+ 2282 01e5 6C6F6E67 		.ascii	"long long unsigned int\000"
+ 2282      206C6F6E 
+ 2282      6720756E 
+ 2282      7369676E 
+ 2282      65642069 
+ 2283              	.LASF16:
+ 2284 01fc 6C6F6E67 		.ascii	"long double\000"
+ 2284      20646F75 
+ 2284      626C6500 
+ 2285              	.LASF17:
+ 2286 0208 73697A65 		.ascii	"sizetype\000"
+ 2286      74797065 
+ 2286      00
+ 2287              	.LASF24:
+ 2288 0211 52656164 		.ascii	"Read_SPI\000"
+ 2288      5F535049 
+ 2288      00
+ 2289              	.LASF6:
+ 2290 021a 6C6F6E67 		.ascii	"long long int\000"
+ 2290      206C6F6E 
+ 2290      6720696E 
+ARM GAS  C:\Users\serga\AppData\Local\Temp\ccBUXdXZ.s 			page 46
+
+
+ 2290      7400
+ 2291              	.LASF43:
+ 2292 0228 6D61696E 		.ascii	"main.c\000"
+ 2292      2E6300
+ 2293              	.LASF15:
+ 2294 022f 63686172 		.ascii	"char\000"
+ 2294      00
+ 2295              	.LASF22:
+ 2296 0234 4765745F 		.ascii	"Get_Accel_Values\000"
+ 2296      41636365 
+ 2296      6C5F5661 
+ 2296      6C756573 
+ 2296      00
+ 2297              	.LASF2:
+ 2298 0245 73686F72 		.ascii	"short int\000"
+ 2298      7420696E 
+ 2298      7400
+ 2299              	.LASF30:
+ 2300 024f 62756666 		.ascii	"buffer\000"
+ 2300      657200
+ 2301              	.LASF11:
+ 2302 0256 75696E74 		.ascii	"uint8\000"
+ 2302      3800
+ 2303              	.LASF38:
+ 2304 025c 436C6F63 		.ascii	"Clock_Start\000"
+ 2304      6B5F5374 
+ 2304      61727400 
+ 2305              	.LASF4:
+ 2306 0268 6C6F6E67 		.ascii	"long int\000"
+ 2306      20696E74 
+ 2306      00
+ 2307              	.LASF27:
+ 2308 0271 63616C5F 		.ascii	"cal_X\000"
+ 2308      5800
+ 2309              	.LASF28:
+ 2310 0277 63616C5F 		.ascii	"cal_Y\000"
+ 2310      5900
+ 2311              	.LASF29:
+ 2312 027d 63616C5F 		.ascii	"cal_Z\000"
+ 2312      5A00
+ 2313              	.LASF0:
+ 2314 0283 7369676E 		.ascii	"signed char\000"
+ 2314      65642063 
+ 2314      68617200 
+ 2315              	.LASF40:
+ 2316 028f 55415254 		.ascii	"UART_PutString\000"
+ 2316      5F507574 
+ 2316      53747269 
+ 2316      6E6700
+ 2317              	.LASF41:
+ 2318 029e 73707269 		.ascii	"sprintf\000"
+ 2318      6E746600 
+ 2319              	.LASF36:
+ 2320 02a6 43794465 		.ascii	"CyDelay\000"
+ 2320      6C617900 
+ 2321              		.ident	"GCC: (GNU Tools for ARM Embedded Processors) 5.4.1 20160609 (release) [ARM/embedded-5-bran

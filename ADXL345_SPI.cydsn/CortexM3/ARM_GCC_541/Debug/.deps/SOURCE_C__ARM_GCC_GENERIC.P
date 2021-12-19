@@ -1,0 +1,70 @@
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/CortexM3/ARM_GCC_541/Debug/main.o : D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/Clock.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/CyDmac.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/CyFlash.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/CyLib.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/CySpc.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/MISO.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/MISO_aliases.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/MOSI_SDA.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/MOSI_SDA_aliases.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/SCLK.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/SCLK_aliases.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/SPIM.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/SPIM_IntClock.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/SPIM_PVT.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/SS.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/SS_aliases.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/UART.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/UART_IntClock.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cmsis_armcc.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cmsis_compiler.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cmsis_gcc.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/core_cm3.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/core_cm3_psoc5.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cyPm.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cy_em_eeprom.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cydevice.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cydevice_trm.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cydisabledsheets.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cyfitter.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cyfitter_cfg.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cypins.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cytypes.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/project.h D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/main.c 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/Clock.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/CyDmac.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/CyFlash.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/CyLib.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/CySpc.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/MISO.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/MISO_aliases.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/MOSI_SDA.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/MOSI_SDA_aliases.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/SCLK.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/SCLK_aliases.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/SPIM.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/SPIM_IntClock.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/SPIM_PVT.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/SS.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/SS_aliases.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/UART.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/UART_IntClock.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cmsis_armcc.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cmsis_compiler.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cmsis_gcc.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/core_cm3.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/core_cm3_psoc5.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cyPm.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cy_em_eeprom.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cydevice.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cydevice_trm.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cydisabledsheets.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cyfitter.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cyfitter_cfg.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cypins.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/cytypes.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/Generated_Source/PSoC5/project.h : 
+
+D:/Projects/PSoC/PSoC\ 5/ADXL345/ADXL345_SPI.cydsn/main.c : 
+
